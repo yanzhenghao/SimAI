@@ -1,0 +1,1 @@
+/usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/SimAI_oxc.dir/OxcFlowGenerator.cc.o CMakeFiles/SimAI_oxc.dir/OxcFlowOutput.cc.o CMakeFiles/SimAI_oxc.dir/OxcHttpClient.cc.o CMakeFiles/SimAI_oxc.dir/OxcMain.cc.o -o SimAI_oxc  ../AstraSim/libAstraSim.a /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib/libcurl.tbd
