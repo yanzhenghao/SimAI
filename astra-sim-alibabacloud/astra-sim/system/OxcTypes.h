@@ -123,14 +123,14 @@ struct LayerCommInfo {
 // 工作负载配置
 struct WorkloadConfig {
     std::string parallelism_policy;
-    int model_parallel_npu_group;  // TP size
-    int ep_size;                   // EP size
-    int pp_size;                   // PP size
-    int vpp;                       // Virtual PP
-    int ga;                        // Gradient Accumulation
-    int all_gpus;                  // Total GPUs
-    int gpus_per_server;           // GPUs per server
-    int num_layers;
+    int model_parallel_npu_group = 1;  // TP size
+    int ep_size = 1;                   // EP size
+    int pp_size = 1;                   // PP size
+    int vpp = 1;                       // Virtual PP
+    int ga = 1;                        // Gradient Accumulation
+    int all_gpus = 0;                  // Total GPUs
+    int gpus_per_server = 8;           // GPUs per server
+    int num_layers = 0;
     std::vector<LayerCommInfo> layers;
 };
 
