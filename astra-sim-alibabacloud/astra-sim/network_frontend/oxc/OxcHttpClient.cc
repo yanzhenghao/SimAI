@@ -18,8 +18,43 @@
 #include <sstream>
 #include <iostream>
 #include <cstring>
+#include <mutex>
 
 namespace OXC {
+
+// CURL 全局初始化管理器（线程安全，整个程序生命周期只初始化一次）
+class CurlGlobalManager {
+public:
+    static CurlGlobalManager& instance() {
+        static CurlGlobalManager instance;
+        return instance;
+    }
+
+    bool isInitialized() const { return initialized_; }
+
+private:
+    CurlGlobalManager() : initialized_(false) {
+        CURLcode res = curl_global_init(CURL_GLOBAL_DEFAULT);
+        if (res == CURLE_OK) {
+            initialized_ = true;
+        } else {
+            std::cerr << "[OXC] Warning: curl_global_init failed: "
+                      << curl_easy_strerror(res) << std::endl;
+        }
+    }
+
+    ~CurlGlobalManager() {
+        if (initialized_) {
+            curl_global_cleanup();
+        }
+    }
+
+    // 禁止拷贝和移动
+    CurlGlobalManager(const CurlGlobalManager&) = delete;
+    CurlGlobalManager& operator=(const CurlGlobalManager&) = delete;
+
+    bool initialized_;
+};
 
 // libcurl 回调函数，用于接收响应数据
 static size_t writeCallback(void* contents, size_t size, size_t nmemb, void* userp) {
@@ -31,11 +66,12 @@ static size_t writeCallback(void* contents, size_t size, size_t nmemb, void* use
 
 OxcHttpClient::OxcHttpClient()
     : timeout_seconds_(30), initialized_(false) {
-    curl_global_init(CURL_GLOBAL_DEFAULT);
+    // 确保 CURL 全局初始化（线程安全，只执行一次）
+    CurlGlobalManager::instance();
 }
 
 OxcHttpClient::~OxcHttpClient() {
-    curl_global_cleanup();
+    // 不再调用 curl_global_cleanup()，由 CurlGlobalManager 在程序退出时处理
 }
 
 bool OxcHttpClient::initialize(const std::string& base_url) {

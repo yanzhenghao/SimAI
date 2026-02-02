@@ -298,7 +298,8 @@ std::vector<OutputFlow> OxcFlowGenerator::convertOxcResponse(
     std::vector<OutputFlow> flows;
 
     // 按step分组，用于建立依赖关系
-    std::map<int, std::vector<int>> step_flow_ids;
+    // 使用 map<step, map<dst_rank, flow_id>> 优化查找效率 O(1)
+    std::map<int, std::map<int, int>> step_dst_to_flow_id;
     int base_flow_id = global_flow_id_;
 
     for (const auto& entry : entries) {
@@ -316,21 +317,17 @@ std::vector<OutputFlow> OxcFlowGenerator::convertOxcResponse(
 
         // 设置依赖：依赖于前一个step中目标为当前源的流
         if (entry.step > 0) {
-            auto it = step_flow_ids.find(entry.step - 1);
-            if (it != step_flow_ids.end()) {
-                for (int prev_flow_id : it->second) {
-                    // 查找前一个step中dst等于当前src的流
-                    for (const auto& prev_flow : flows) {
-                        if (prev_flow.flow_id == prev_flow_id &&
-                            prev_flow.dst == entry.src_rank) {
-                            flow.depends_on.push_back(prev_flow_id);
-                        }
-                    }
+            auto step_it = step_dst_to_flow_id.find(entry.step - 1);
+            if (step_it != step_dst_to_flow_id.end()) {
+                auto dst_it = step_it->second.find(entry.src_rank);
+                if (dst_it != step_it->second.end()) {
+                    flow.depends_on.push_back(dst_it->second);
                 }
             }
         }
 
-        step_flow_ids[entry.step].push_back(flow.flow_id);
+        // 记录当前流的 dst -> flow_id 映射，供后续 step 查找
+        step_dst_to_flow_id[entry.step][entry.dst_rank] = flow.flow_id;
         flows.push_back(flow);
     }
 
@@ -343,26 +340,33 @@ std::vector<OutputFlow> OxcFlowGenerator::generateAllReduceViaOxc(
 
     // 检查是否跨 rack 通信
     // OXC 算法只适用于跨 rack 的通信，同一 rack 内的通信使用原生算法
-    std::set<int> racks;
+    std::set<std::string> racks;
     for (int rank : comm_group_ranks) {
-        int rack_id = rank / gpus_per_server_;
-        racks.insert(rack_id);
+        std::string rank_str = std::to_string(rank);
+        auto it = global_rank_rack_map_.find(rank_str);
+        if (it != global_rank_rack_map_.end()) {
+            racks.insert(it->second);
+        } else {
+            // 如果 rank_rack_map 中没有该 rank，使用 gpus_per_server_ 计算作为回退
+            int rack_id = rank / gpus_per_server_;
+            racks.insert("rack_" + std::to_string(rack_id));
+        }
     }
 
     if (racks.size() <= 1) {
         // 所有 rank 都在同一个 rack，使用原生算法
-        static int native_count = 0;
-        if (native_count < 5) {
+        static int native_log_count = 0;
+        if (native_log_count < 5) {
             std::cout << "[OXC] Using NATIVE (same rack): op=" << ctx.operation_id
                       << ", racks=" << racks.size() << std::endl;
-            native_count++;
+            native_log_count++;
         }
         return generateViaNative(ctx, comm_group_ranks);
     }
 
     // 跨 rack 通信，调用 OXC API
-    static int oxc_count = 0;
-    if (oxc_count < 5) {
+    static int oxc_log_count = 0;
+    if (oxc_log_count < 5) {
         std::cout << "[OXC] Calling OXC API (cross-rack): op=" << ctx.operation_id
                   << ", racks=" << racks.size() << ", ranks=[";
         for (size_t i = 0; i < std::min(comm_group_ranks.size(), static_cast<size_t>(4)); ++i) {
@@ -370,7 +374,7 @@ std::vector<OutputFlow> OxcFlowGenerator::generateAllReduceViaOxc(
             std::cout << comm_group_ranks[i];
         }
         std::cout << "]" << std::endl;
-        oxc_count++;
+        oxc_log_count++;
     }
 
     OxcAllReduceRequest request;
@@ -578,8 +582,8 @@ std::vector<OutputFlow> OxcFlowGenerator::generateFlows(
     op_ctx.base_flow_id = global_flow_id_;
 
     // 调试输出（每1000个操作输出一次，避免输出过多）
-    static int debug_counter = 0;
-    bool should_debug = (debug_counter < 10) || (debug_counter % 1000 == 0);
+    static int op_log_count = 0;
+    bool should_debug = (op_log_count < 10) || (op_log_count % 1000 == 0);
 
     if (should_debug) {
         std::cout << "[OXC DEBUG] Op " << op_ctx.operation_id
@@ -594,7 +598,7 @@ std::vector<OutputFlow> OxcFlowGenerator::generateFlows(
         if (comm_group_ranks.size() > 4) std::cout << "...";
         std::cout << "]" << std::endl;
     }
-    debug_counter++;
+    op_log_count++;
 
     if (isOxcSupported(ctx.comm_type)) {
         flows = generateAllReduceViaOxc(op_ctx, comm_group_ranks);

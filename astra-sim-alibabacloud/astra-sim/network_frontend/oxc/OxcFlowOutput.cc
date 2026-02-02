@@ -28,13 +28,13 @@ OxcFlowOutput::OxcFlowOutput(const std::string& output_prefix)
 OxcFlowOutput::~OxcFlowOutput() {
 }
 
-void OxcFlowOutput::writeFlowMatrices(const std::vector<OutputFlow>& flows) {
+bool OxcFlowOutput::writeFlowMatrices(const std::vector<OutputFlow>& flows) {
     std::string filename = output_prefix_ + "_flows.csv";
     std::ofstream ofs(filename);
 
     if (!ofs.is_open()) {
         std::cerr << "[OXC] Error: Cannot open file " << filename << " for writing" << std::endl;
-        return;
+        return false;
     }
 
     // 写入CSV头
@@ -64,9 +64,10 @@ void OxcFlowOutput::writeFlowMatrices(const std::vector<OutputFlow>& flows) {
 
     ofs.close();
     std::cout << "[OXC] Flow matrices written to " << filename << std::endl;
+    return true;
 }
 
-void OxcFlowOutput::writeDependencyGraph(
+bool OxcFlowOutput::writeDependencyGraph(
     const std::vector<OperationContext>& operations,
     const std::vector<OutputFlow>& flows) {
 
@@ -75,7 +76,7 @@ void OxcFlowOutput::writeDependencyGraph(
 
     if (!ofs.is_open()) {
         std::cerr << "[OXC] Error: Cannot open file " << filename << " for writing" << std::endl;
-        return;
+        return false;
     }
 
     ofs << "{" << std::endl;
@@ -132,9 +133,10 @@ void OxcFlowOutput::writeDependencyGraph(
 
     ofs.close();
     std::cout << "[OXC] Dependency graph written to " << filename << std::endl;
+    return true;
 }
 
-void OxcFlowOutput::writeSummary(
+bool OxcFlowOutput::writeSummary(
     const WorkloadConfig& config,
     const std::vector<OperationContext>& operations,
     const std::vector<OutputFlow>& flows,
@@ -146,7 +148,7 @@ void OxcFlowOutput::writeSummary(
 
     if (!ofs.is_open()) {
         std::cerr << "[OXC] Error: Cannot open file " << filename << " for writing" << std::endl;
-        return;
+        return false;
     }
 
     ofs << "SimAI-OXC Flow Generation Summary" << std::endl;
@@ -213,6 +215,7 @@ void OxcFlowOutput::writeSummary(
 
     ofs.close();
     std::cout << "[OXC] Summary written to " << filename << std::endl;
+    return true;
 }
 
 }  // namespace OXC
