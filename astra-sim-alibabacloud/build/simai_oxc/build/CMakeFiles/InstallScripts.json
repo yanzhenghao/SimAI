@@ -1,9 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/Users/anthony/PycharmProjects/SimAI/astra-sim-alibabacloud/build/simai_oxc/build/cmake_install.cmake",
-		"/Users/anthony/PycharmProjects/SimAI/astra-sim-alibabacloud/build/simai_oxc/build/AstraSim/cmake_install.cmake",
-		"/Users/anthony/PycharmProjects/SimAI/astra-sim-alibabacloud/build/simai_oxc/build/simai_oxc/cmake_install.cmake"
-	],
-	"Parallel" : false
-}
