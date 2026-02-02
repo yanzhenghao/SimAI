@@ -27,17 +27,17 @@ public:
     OxcFlowOutput(const std::string& output_prefix);
     ~OxcFlowOutput();
 
-    // 写入流矩阵到CSV文件
-    void writeFlowMatrices(const std::vector<OutputFlow>& flows);
+    // 写入流矩阵到CSV文件，返回是否成功
+    bool writeFlowMatrices(const std::vector<OutputFlow>& flows);
 
-    // 写入依赖图到JSON文件
-    void writeDependencyGraph(
+    // 写入依赖图到JSON文件，返回是否成功
+    bool writeDependencyGraph(
         const std::vector<OperationContext>& operations,
         const std::vector<OutputFlow>& flows
     );
 
-    // 写入摘要信息
-    void writeSummary(
+    // 写入摘要信息，返回是否成功
+    bool writeSummary(
         const WorkloadConfig& config,
         const std::vector<OperationContext>& operations,
         const std::vector<OutputFlow>& flows,
