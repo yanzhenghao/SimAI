@@ -15,6 +15,10 @@ from workload_generator.mocked_model.training import MockedDeepSeek
 import workload_generator.mocked_model.training.MockedDeepspeed
 from workload_generator.mocked_model.training.MockedMegatron import *
 from workload_generator.mocked_model.training.MockedDeepSeek import *
+from workload_generator.mocked_model.training.MockedQwen3 import (
+    Qwen3Model, Qwen3Attention, Qwen3Mlp, Qwen3Embedding, Qwen3RMSNorm,
+)
+from workload_generator.mocked_model.training.MockedQwen3_5 import Qwen3_5Model
 from workload_generator.mocked_model.MockedModel import MockedParam, MockedModel
 from utils.utils import CommType, get_params, get_comp_out, extract_averages
 import os
@@ -116,6 +120,8 @@ class SIMAI_workload:
                     or isinstance(model, MegatronEmbedding)
                     or isinstance(model, FusedLayernorm)
                     or isinstance(model, DeepSeekLinear)
+                    or isinstance(model, Qwen3Embedding)
+                    or isinstance(model, Qwen3RMSNorm)
                 ):
                     params = model.parameters()
                     param_count = sum(p.numel() for p in params)
@@ -132,6 +138,9 @@ class SIMAI_workload:
                     or isinstance(model, MegatronEmbedding)
                     or isinstance(model, DeepSeekMLA)
                     or isinstance(model, DeepSeekMoE)
+                    or isinstance(model, Qwen3Attention)
+                    or isinstance(model, Qwen3Mlp)
+                    or isinstance(model, Qwen3Embedding)
                 ):
                     params = model.parameters()
                     param_count = sum(p.numel() for p in params)
@@ -627,7 +636,7 @@ class SIMAI_workload:
                     dp_comm_size=0,
                 )
             )
-        if args.expert_model_parallel_size != args.dp_num:
+        if self.args.expert_model_parallel_size != self.args.dp_num:
             self.workload.append(Work_Item(name="moe_grad_norm1", forward_compute_time=default_compute_time,
                                     forward_comm = "NONE", forward_comm_size= 0,
                                     backward_compute_time=default_compute_time, backward_comm="NONE", backward_comm_size=0,
@@ -937,6 +946,10 @@ if __name__ == "__main__":
     print(args)
     if args.frame == "DeepSeek":
         model = DeepSeekV3Model(args)
+    elif args.frame == "Qwen3":
+        model = Qwen3Model(args)
+    elif args.frame == "Qwen3.5":
+        model = Qwen3_5Model(args)
     else:
         model = MegatronModel(args)
     result_dir = "results/workload/"
