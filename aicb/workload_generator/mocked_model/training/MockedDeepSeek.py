@@ -361,8 +361,8 @@ class DeepSeekMoE(MockedModel):
 
     def moe_mlp_backward(self):
         workloads = Workload()
-        self.permutation(stage="backward")
-        self.unpermutation(stage="backward")
+        workloads.extend(self.permutation(stage="backward"))
+        workloads.extend(self.unpermutation(stage="backward"))
         assert all([isinstance(workload, LogItem) for workload in workloads.workload])
         return workloads
 
