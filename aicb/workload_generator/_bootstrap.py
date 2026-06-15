@@ -26,6 +26,7 @@ from workload_generator.mocked_model.training.MockedMegatron import MegatronMode
 from workload_generator.mocked_model.training.MockedDeepSeek import DeepSeekV3Model
 from workload_generator.mocked_model.training.MockedDeepspeed import DeepspeedForCausalLM
 from workload_generator.mocked_model.training.MockedLlama import LlamaModel
+from workload_generator.mocked_model.training.MockedFalconH1 import FalconH1Model
 
 # ---------------------------------------------------------------------------
 # Workload generators
@@ -89,10 +90,17 @@ register_model(
 )
 
 register_model(
-    "LLaMA",
+    "Llama",
     LlamaModel,
     MegatronWorkload,
-    "LLaMA 2/3/4 training workload (GQA + SwiGLU + RMSNorm pre-norm)",
+    "Llama 2/3/4 training workload (GQA + SwiGLU + RMSNorm pre-norm)",
+)
+
+register_model(
+    "FalconH1",
+    FalconH1Model,
+    MegatronWorkload,
+    "Falcon-H1 training workload (Mamba-2 SSM + GQA hybrid architecture)",
 )
 
 register_model(
