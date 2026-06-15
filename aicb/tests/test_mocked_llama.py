@@ -247,7 +247,7 @@ class TestLlamaDecoderLayer:
 # ---------------------------------------------------------------------------
 class TestLlamaModel:
     def test_llama7b_param_count(self):
-        """LLaMA-7B config: total params should be in 6.5B-7.2B range."""
+        """Llama-7B config: total params should be in 6.5B-7.2B range."""
         config = MockConfig(
             hidden_size=4096,
             ffn_hidden_size=11008,
@@ -258,13 +258,13 @@ class TestLlamaModel:
         )
         model = LlamaModel(config)
         total = sum(p.numel() for p in model.parameters())
-        # LLaMA-7B: ~6.7B params (our untied embedding adds ~131M extra)
+        # Llama-7B: ~6.7B params (our untied embedding adds ~131M extra)
         assert 6_500_000_000 < total < 7_200_000_000, (
             f"Expected ~6.7B-7.15B params (with untied lm_head), got {total}"
         )
 
     def test_llama3_8b_gqa_param_count(self):
-        """LLaMA-3-8B with GQA (8 KV heads) and 128K vocab."""
+        """Llama-3-8B with GQA (8 KV heads) and 128K vocab."""
         config = MockConfig(
             hidden_size=4096,
             ffn_hidden_size=14336,
@@ -275,8 +275,8 @@ class TestLlamaModel:
         )
         model = LlamaModel(config)
         total = sum(p.numel() for p in model.parameters())
-        # LLaMA-3-8B: ~8.0B params reported, but our untied embedding/lm_head
-        # adds ~2 * (128256-32000) * 4096 = ~788M extra vs LLaMA-7B baseline.
+        # Llama-3-8B: ~8.0B params reported, but our untied embedding/lm_head
+        # adds ~2 * (128256-32000) * 4096 = ~788M extra vs Llama-7B baseline.
         # Actual total with separate embedding + lm_head: ~9.5-9.7B
         assert 9_000_000_000 < total < 10_000_000_000, (
             f"Expected ~9.5-9.7B params (untied embedding + lm_head), got {total}"

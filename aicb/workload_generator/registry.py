@@ -1,7 +1,7 @@
 """
 Model Registry for AICB Workload Generator.
 
-Provides a centralized registry that maps frame names (e.g. "Megatron", "LLaMA")
+Provides a centralized registry that maps frame names (e.g. "Megatron", "Llama")
 to ModelEntry records containing the model class, workload generator class, and
 a human-readable description. This replaces the hardcoded if/elif chain in aicb.py,
 enabling new model frameworks to be added without modifying the entry point.
@@ -9,7 +9,7 @@ enabling new model frameworks to be added without modifying the entry point.
 Usage:
     # In a MockedModel file (e.g., MockedLlama.py):
     from workload_generator.registry import register_model
-    register_model("LLaMA", LlamaModel, MegatronWorkload, "LLaMA decoder-only model")
+    register_model("Llama", LlamaModel, MegatronWorkload, "Llama decoder-only model")
 
     # In aicb.py:
     from workload_generator.registry import lookup, model_registry
@@ -31,7 +31,7 @@ class ModelEntry:
     """Describes a registered model framework.
 
     Attributes:
-        name: Frame name used as --frame argument value (e.g. "Megatron", "LLaMA").
+        name: Frame name used as --frame argument value (e.g. "Megatron", "Llama").
         model_cls: Callable that constructs the MockedModel instance.
                    May be None for frameworks that don't require a model (e.g. collective_test).
         wl_cls: WorkloadGenerator class, or a callable factory that returns one.

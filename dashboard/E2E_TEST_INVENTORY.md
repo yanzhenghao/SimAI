@@ -111,7 +111,7 @@
 #### Interactive Elements:
 
 1. **Mode Selector** (3 buttons):
-   - "Preset Model" - use LLaMA/GPT presets
+   - "Preset Model" - use Llama/GPT presets
    - "Custom Layers" - define custom config
    - "Upload File" - upload existing file
    - State: `workloadMode` ('preset' | 'custom' | 'upload')

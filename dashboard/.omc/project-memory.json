@@ -47,7 +47,7 @@
     "runtime": null
   },
   "build": {
-    "buildCommand": "cd /Users/anthony/PycharmProjects/SimAI/dashboard && npx tsc --noEmit 2>&1",
+    "buildCommand": "cd dashboard && npx tsc --noEmit 2>&1 | head -20",
     "testCommand": "python3 -m pytest server/edg/tests/ -v -k \"not launch_ns3 and not binary_exists\" 2>&1 | tail -3 && cd dashboard && npx tsc --noEmit 2>&1 | tail -3",
     "lintCommand": "npm run lint",
     "devCommand": "npm run dev",
@@ -283,6 +283,12 @@
       "type": "file"
     },
     {
+      "path": "src/main.tsx",
+      "accessCount": 4,
+      "lastAccessed": 1781140124132,
+      "type": "file"
+    },
+    {
       "path": "src/pages/TopologyPage.tsx",
       "accessCount": 3,
       "lastAccessed": 1776155353694,
@@ -307,9 +313,9 @@
       "type": "file"
     },
     {
-      "path": "src/main.tsx",
-      "accessCount": 2,
-      "lastAccessed": 1776155309276,
+      "path": "package.json",
+      "accessCount": 3,
+      "lastAccessed": 1781140006417,
       "type": "file"
     },
     {
@@ -376,6 +382,12 @@
       "path": "src/components/wizard/WizardLayout.tsx",
       "accessCount": 2,
       "lastAccessed": 1776838824969,
+      "type": "file"
+    },
+    {
+      "path": "start.sh",
+      "accessCount": 2,
+      "lastAccessed": 1781140154505,
       "type": "file"
     },
     {
@@ -448,12 +460,6 @@
       "path": "test-results-final.mjs",
       "accessCount": 1,
       "lastAccessed": 1776171935807,
-      "type": "file"
-    },
-    {
-      "path": "package.json",
-      "accessCount": 1,
-      "lastAccessed": 1776325087555,
       "type": "file"
     },
     {

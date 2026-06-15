@@ -1,7 +1,7 @@
 {
   "version": "2.0",
   "status": "completed",
-  "rank_count": 32,
+  "rank_count": 64,
   "rank_list": [
     {
       "rank_id": 0,
@@ -730,6 +730,742 @@
             {
               "addr_type": "EID",
               "addr": "000000000000002000100000df001020",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 32,
+      "device_id": 32,
+      "local_id": 0,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_4",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001021",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 33,
+      "device_id": 33,
+      "local_id": 1,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_4",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001022",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 34,
+      "device_id": 34,
+      "local_id": 2,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_4",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001023",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 35,
+      "device_id": 35,
+      "local_id": 3,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_4",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001024",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 36,
+      "device_id": 36,
+      "local_id": 4,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_4",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001025",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 37,
+      "device_id": 37,
+      "local_id": 5,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_4",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001026",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 38,
+      "device_id": 38,
+      "local_id": 6,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_4",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001027",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 39,
+      "device_id": 39,
+      "local_id": 7,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_4",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001028",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 40,
+      "device_id": 40,
+      "local_id": 0,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_5",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001029",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 41,
+      "device_id": 41,
+      "local_id": 1,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_5",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00102a",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 42,
+      "device_id": 42,
+      "local_id": 2,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_5",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00102b",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 43,
+      "device_id": 43,
+      "local_id": 3,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_5",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00102c",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 44,
+      "device_id": 44,
+      "local_id": 4,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_5",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00102d",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 45,
+      "device_id": 45,
+      "local_id": 5,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_5",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00102e",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 46,
+      "device_id": 46,
+      "local_id": 6,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_5",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00102f",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 47,
+      "device_id": 47,
+      "local_id": 7,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_5",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001030",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 48,
+      "device_id": 48,
+      "local_id": 0,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_6",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001031",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 49,
+      "device_id": 49,
+      "local_id": 1,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_6",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001032",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 50,
+      "device_id": 50,
+      "local_id": 2,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_6",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001033",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 51,
+      "device_id": 51,
+      "local_id": 3,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_6",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001034",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 52,
+      "device_id": 52,
+      "local_id": 4,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_6",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001035",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 53,
+      "device_id": 53,
+      "local_id": 5,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_6",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001036",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 54,
+      "device_id": 54,
+      "local_id": 6,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_6",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001037",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 55,
+      "device_id": 55,
+      "local_id": 7,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_6",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001038",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 56,
+      "device_id": 56,
+      "local_id": 0,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_7",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001039",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 57,
+      "device_id": 57,
+      "local_id": 1,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_7",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00103a",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 58,
+      "device_id": 58,
+      "local_id": 2,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_7",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00103b",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 59,
+      "device_id": 59,
+      "local_id": 3,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_7",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00103c",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 60,
+      "device_id": 60,
+      "local_id": 4,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_7",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00103d",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 61,
+      "device_id": 61,
+      "local_id": 5,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_7",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00103e",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 62,
+      "device_id": 62,
+      "local_id": 6,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_7",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df00103f",
+              "ports": [
+                "0/0"
+              ],
+              "plane_id": "plane0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rank_id": 63,
+      "device_id": 63,
+      "local_id": 7,
+      "level_list": [
+        {
+          "net_layer": 0,
+          "net_instance_id": "rack_7",
+          "net_type": "TOPO_FILE_DESC",
+          "net_attr": "",
+          "rank_addr_list": [
+            {
+              "addr_type": "EID",
+              "addr": "000000000000002000100000df001040",
               "ports": [
                 "0/0"
               ],

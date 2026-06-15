@@ -45,7 +45,7 @@ aicb/
 | 维度 | 当前状态 (AICB 2.1) | 设计目标 |
 |------|---------------------|----------|
 | 支持模型数 | ~10 个 | 18-20 个 |
-| 模型架构家族 | LLaMA, GPT, Mistral, DeepSeek | + Gemma, Falcon, DBRX, Phi, Command R, Qwen, Llama 4 |
+| 模型架构家族 | Llama, GPT, Mistral, DeepSeek | + Gemma, Falcon, DBRX, Phi, Command R, Qwen, Llama 4 |
 | 输出格式 | SimAI 专有格式 | + Chakra Execution Trace (Protobuf/JSON DAG) |
 | Workload 可调优性 | 无 | Straggler 注入、workload 缩放、变异性建模 |
 | 推理支持 | DeepSeek, Qwen3-MoE/Next | 维持现有覆盖 |
@@ -184,9 +184,9 @@ mocked_model 的领域数据模型如下（核心实体及关系）：
 
 | Model Family | Architecture Variant | Layer Structure | AICB mocked_model Fit | Effort |
 |-------------|---------------------|-----------------|----------------------|--------|
-| **LLaMA 3.x** (Meta) | Pre-norm decoder, GQA, SwiGLU MLP | Serial: RMSNorm -> Attention -> RMSNorm -> MLP | Already supported (Llama3 405B). Add 8B/70B configs. | Low |
+| **Llama 3.x** (Meta) | Pre-norm decoder, GQA, SwiGLU MLP | Serial: RMSNorm -> Attention -> RMSNorm -> MLP | Already supported (Llama3 405B). Add 8B/70B configs. | Low |
 | **GPT-4 class / GPT-NeoX** (OpenAI/Eleuther) | Pre-norm decoder (GPT-4 architecture not publicly documented; assumed similar to GPT-3/GPT-NeoX) | Serial: LayerNorm -> Attention -> LayerNorm -> MLP | Matches GPT pattern already in AICB. Parameterize hidden dim + heads. | Low |
-| **Gemma 2/3** (Google) | Pre-norm decoder, GQA (2:1 to 4:1 KV head ratio depending on model size), GeGLU MLP | Serial: RMSNorm -> Attention -> RMSNorm -> MLP | Same structure as LLaMA. Different GQA ratios per model size (e.g. 27B uses 32 Q heads / 16 KV heads = 2:1; 12B uses 24/8 = 3:1; 4B uses 16/4 = 4:1). [Source: NVIDIA NeMo Megatron-Bridge Gemma 3 docs](https://docs.nvidia.com/nemo/megatron-bridge/0.3.1/models/llm/gemma3.html) | Low |
+| **Gemma 2/3** (Google) | Pre-norm decoder, GQA (2:1 to 4:1 KV head ratio depending on model size), GeGLU MLP | Serial: RMSNorm -> Attention -> RMSNorm -> MLP | Same structure as Llama. Different GQA ratios per model size (e.g. 27B uses 32 Q heads / 16 KV heads = 2:1; 12B uses 24/8 = 3:1; 4B uses 16/4 = 4:1). [Source: NVIDIA NeMo Megatron-Bridge Gemma 3 docs](https://docs.nvidia.com/nemo/megatron-bridge/0.3.1/models/llm/gemma3.html) | Low |
 | **Qwen 2.5** (Alibaba) | Pre-norm decoder, GQA, SwiGLU MLP | Serial: RMSNorm -> Attention -> RMSNorm -> MLP | Same structure as Llama3. Already have Qwen3 inference. | Low |
 | **Mistral/Mixtral** (Mistral AI) | Pre-norm decoder, GQA, sliding window attention, SiLU MLP; Mixtral adds MoE FFN | Serial or MoE-augmented | Already supported (Mistral 8x7B). Add Mixtral 8x22B config. | Low |
 | **Falcon 3** (TII) | Parallel attention + MLP, MQA (1 KV head) | Parallel: RMSNorm -> [Attention || MLP] simultaneously | Different layer ordering: attention and MLP computed in parallel, not serial. Requires mocked_model to support parallel execution within a single layer. | Low-Medium |
@@ -200,7 +200,7 @@ mocked_model 的领域数据模型如下（核心实体及关系）：
 
 **新增模型参数对照表（concrete mocked_model parameters per family）：**
 
-| Parameter | LLaMA 3.1 8B | Gemma 3 12B | Falcon 3 | DBRX | Phi-4 |
+| Parameter | Llama 3.1 8B | Gemma 3 12B | Falcon 3 | DBRX | Phi-4 |
 |-----------|-------------|-------------|----------|------|-------|
 | `num_layers` | 32 | 48 | Varies | 40 | 40 |
 | `hidden_size` | 4096 | 3840 | Varies | 4608 | 5120 |
@@ -215,7 +215,7 @@ mocked_model 的领域数据模型如下（核心实体及关系）：
 | `seq_length` | 131072 | 131072 | Varies | 32768 | 32768 |
 | `rope_theta` | 500000 | 1000000 (global) | Varies | 500000 | 10000 |
 
-**关键发现：** 对于标准 decoder-only 架构（LLaMA 3.1, Gemma 3, Phi-4），**每个参数在现有 Megatron-LM mocked_model 配置中已有对应字段**。仅 Falcon（需要 `use_parallel_attention = True` 支持）和 DBRX（需要 top-4 EP gating）需要代码变更。
+**关键发现：** 对于标准 decoder-only 架构（Llama 3.1, Gemma 3, Phi-4），**每个参数在现有 Megatron-LM mocked_model 配置中已有对应字段**。仅 Falcon（需要 `use_parallel_attention = True` 支持）和 DBRX（需要 top-4 EP gating）需要代码变更。
 
 ### 3.2 2025-2026 年新模型与新型并行策略
 
@@ -456,7 +456,7 @@ AICB's ~10 curated models is fewer than Echo (any HF model) and Chakra's Open Tr
 
 | Model Family | AICB 2.1 | Chakra Open Trace Lib | MLSynth | Echo | Gap Type |
 |-------------|----------|----------------------|---------|------|----------|
-| LLaMA 7B/65B/405B | Yes | Yes (Llama 3) | Via Transformer class | Yes (HF trace) | None |
+| Llama 7B/65B/405B | Yes | Yes (Llama 3) | Via Transformer class | Yes (HF trace) | None |
 | GPT 13B-175B | Yes | Yes (GPT-3) | Via Transformer class | Yes (HF trace) | None |
 | GPT-4 class | No (arch not public) | No | No | No | Industry-wide |
 | Mixtral 8x22B | No | Yes | Via MoE class | Yes | Parametric |
@@ -526,13 +526,13 @@ Sub-question (3) of the original research asks: does aliyun/aicb have recent com
 
 ##### 4.2.1 功能概述
 
-为 6 个 decoder-only 模型家族（LLaMA 3.1 8B/70B, Phi-4, Gemma 3 12B/27B, Qwen 2.5, Command R, Mixtral 8x22B）添加参数配置文件，无需修改 mocked_model 代码。利用现有 Megatron-LM mocked_model 后端的参数化能力，仅需新增 YAML 格式的模型 profile。
+为 6 个 decoder-only 模型家族（Llama 3.1 8B/70B, Phi-4, Gemma 3 12B/27B, Qwen 2.5, Command R, Mixtral 8x22B）添加参数配置文件，无需修改 mocked_model 代码。利用现有 Megatron-LM mocked_model 后端的参数化能力，仅需新增 YAML 格式的模型 profile。
 
 ##### 4.2.2 SR 设计
 
 | SR编号 | 系统需求描述 | 实现方式 |
 |--------|-------------|----------|
-| SR-F001-01 | 支持 LLaMA 3.1 8B 和 70B 的 workload 生成 | 复用现有 Llama3 405B 的 Megatron-LM 配置模板，替换 hidden_size / num_layers / num_heads / num_kv_heads |
+| SR-F001-01 | 支持 Llama 3.1 8B 和 70B 的 workload 生成 | 复用现有 Llama3 405B 的 Megatron-LM 配置模板，替换 hidden_size / num_layers / num_heads / num_kv_heads |
 | SR-F001-02 | 支持 Phi-4 的 workload 生成 | 新增 Megatron-LM 模型 profile，使用 GeLU 激活函数（非 SwiGLU） |
 | SR-F001-03 | 支持 Gemma 3 的 workload 生成（12B/27B） | 新增 Megatron-LM 模型 profile，配置 GQA ratio（3:1 / 2:1），GeGLU 激活，5:1 local:global attention |
 | SR-F001-04 | 支持 Mixtral 8x22B 的 workload 生成 | 复用现有 Mixtral 8x7B 配置模板，替换专家数量参数 |
@@ -544,7 +544,7 @@ Sub-question (3) of the original research asks: does aliyun/aicb have recent com
 
 ##### 4.2.4 实现设计 【核心 -- 必选】
 
-**前置条件**: Megatron-LM 后端的 mocked_model 正常运行，现有 LLaMA/GPT/Mistral 配置可生成 workload。
+**前置条件**: Megatron-LM 后端的 mocked_model 正常运行，现有 Llama/GPT/Mistral 配置可生成 workload。
 
 **触发事件**: 用户指定新模型名称（如 `llama3.1-8b`）和并行策略配置。
 
@@ -800,7 +800,7 @@ API:  writer = ChakraWriter(workload); writer.write(output_dir)
 
 **性能分析**: GPT-175B (96 layers, TP=8, PP=8, 64 GPUs) Chakra ET 导出预计耗时 < 5 秒。输出文件大小约 50-200 MB per 64 ranks。
 
-**可测试性**: 与已知 gold standard 比较 -- 使用 AICB 生成的 LLaMA 7B workload 导出的 Chakra ET，应与从真实 PyTorch Megatron-LM 训练中捕获的 Chakra ET 在通信节点数量和总通信量上一致（误差 < 5%）。
+**可测试性**: 与已知 gold standard 比较 -- 使用 AICB 生成的 Llama 7B workload 导出的 Chakra ET，应与从真实 PyTorch Megatron-LM 训练中捕获的 Chakra ET 在通信节点数量和总通信量上一致（误差 < 5%）。
 
 ##### 4.3.10 分配需求
 
@@ -1059,13 +1059,13 @@ layer_pattern:
 
 ##### 4.6.1 功能概述
 
-为 mocked_model 添加 `use_parallel_attention` 子层模式支持。Falcon 3 将 attention 和 MLP 设计为同一 RMSNorm 输出后的并行分支（而非 LLaMA 的串行 attention -> MLP）。这改变了通信时机：两个分支的 AllReduce 可以同时进行而非串行等待，影响通信-计算 overlap 的建模精度。
+为 mocked_model 添加 `use_parallel_attention` 子层模式支持。Falcon 3 将 attention 和 MLP 设计为同一 RMSNorm 输出后的并行分支（而非 Llama 的串行 attention -> MLP）。这改变了通信时机：两个分支的 AllReduce 可以同时进行而非串行等待，影响通信-计算 overlap 的建模精度。
 
 ##### 4.6.2 SR 设计
 
 | SR编号 | 系统需求描述 | 实现方式 |
 |--------|-------------|----------|
-| SR-F005-01 | 在 `LayerConfig` 中新增 `use_parallel_attention` bool 字段 | 默认 false（向后兼容 LLaMA 串行模式） |
+| SR-F005-01 | 在 `LayerConfig` 中新增 `use_parallel_attention` bool 字段 | 默认 false（向后兼容 Llama 串行模式） |
 | SR-F005-02 | 在 mocked_model 中，当 `use_parallel_attention=true` 时，将 attention 和 MLP 的 compute ops 设为可并行（无依赖），通信节点可同时调度 | 取消 attention output -> MLP input 的 data_dep |
 
 ##### 4.6.3 实现思路

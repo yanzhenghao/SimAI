@@ -8,7 +8,7 @@
 **Type:** 功能设计说明书 + 竞争调研报告
 **Date:** 2026-06-15
 
-Comprehensive research and design specification for extending AICB (aliyun/aicb) workload generator to support additional LLM model architectures (LLaMA, GPT, Mistral/Mixtral, Qwen, Gemma, Falcon, DBRX, and others).
+Comprehensive research and design specification for extending AICB (aliyun/aicb) workload generator to support additional LLM model architectures (Llama, GPT, Mistral/Mixtral, Qwen, Gemma, Falcon, DBRX, and others).
 
 **Contents:**
 - Section 1: Functional domain overview + AICB codebase structure

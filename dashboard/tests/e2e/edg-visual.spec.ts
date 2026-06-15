@@ -30,7 +30,7 @@ test('EDG visual: OXC port-level adjustment diagram', async ({ page }) => {
   await page.waitForLoadState('networkidle');
   await page.waitForTimeout(500);
   // Pick first available model card / preset
-  const modelBtn = page.locator('button, [role=button]').filter({ hasText: /LLaMA|GPT|DeepSeek/i }).first();
+  const modelBtn = page.locator('button, [role=button]').filter({ hasText: /Llama|GPT|DeepSeek/i }).first();
   if (await modelBtn.count() > 0) {
     await modelBtn.click();
     await page.waitForTimeout(500);

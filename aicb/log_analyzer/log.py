@@ -291,7 +291,65 @@ class Workload:
         )
 
     def extend(self, new_workload):
-        self.workload.extend(new_workload.workload)
+        # Late-binding check: ParallelWorkload is defined after Workload
+        if type(new_workload).__name__ == 'ParallelWorkload':
+            self.workload.extend(new_workload.flatten().workload)
+        else:
+            self.workload.extend(new_workload.workload)
+
+    def total_comm_bytes(self):
+        """Total communication bytes across all items (excluding computation)."""
+        return sum(
+            w.msg_size for w in self.workload
+            if w.comm_type != CommType.computation
+        )
+
+
+class ParallelWorkload:
+    """A group of Workload objects that execute concurrently.
+
+    The simulator should schedule all child Workload objects in parallel
+    and consider the group complete when the slowest child finishes.
+
+    Flattening strategy (for analytical/replay consumers that lack native
+    parallel scheduling): keep all LogItems from all children, but tag
+    communication items in non-critical paths with additional='overlap'
+    so the replayer zeroes out their elapsed time.
+    """
+
+    def __init__(self, children=None):
+        self.children = children if children is not None else []
+
+    def add(self, workload):
+        self.children.append(workload)
+
+    def flatten(self):
+        """Flatten into a single sequential Workload with overlap tagging.
+
+        Finds the child with the largest total communication volume and
+        tags all other children's communication items as overlapped.
+        Computation items are always preserved (they must execute on all
+        pathways regardless of overlap).
+        """
+        if not self.children:
+            return Workload()
+        if len(self.children) == 1:
+            return self.children[0]
+
+        # Identify the critical path: child with largest total comm bytes
+        critical_idx = max(
+            range(len(self.children)),
+            key=lambda i: self.children[i].total_comm_bytes(),
+        )
+
+        result = Workload()
+        for i, child in enumerate(self.children):
+            for item in child.workload:
+                if i != critical_idx and item.comm_type != CommType.computation:
+                    item.additional = 'overlap'
+                result.workload.append(item)
+
+        return result
 
     def dump(self, filename):
         folder_path = os.path.dirname(filename)

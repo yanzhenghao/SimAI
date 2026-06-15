@@ -4,13 +4,13 @@
 
 本功能域描述 AICB（AI Communication Benchmark）workload generator 的模型框架可扩展性设计。当前 AICB 通过 `args.frame` 参数支持 Megatron-LM、DeepSpeed（Stage 1/2/3）和 DeepSeek 三种训练框架，以及 DeepSeek、Qwen3-MoE、Qwen3-Next 三种推理框架。每个框架通过在 `workload_generator/mocked_model/` 目录下定义 MockedModel 子类来描述模型结构和通信模式。
 
-本设计的核心目标是：建立一套标准化、低摩擦的机制，使开发者能够快速为新的模型架构（LLaMA、GPT、Mistral、Gemma、Falcon 等）添加 AICB 训练/推理 workload 生成支持，同时补齐当前缺失的并行策略（上下文并行）和生态系统互操作能力（Chakra ET 导出）。
+本设计的核心目标是：建立一套标准化、低摩擦的机制，使开发者能够快速为新的模型架构（Llama、GPT、Mistral、Gemma、Falcon 等）添加 AICB 训练/推理 workload 生成支持，同时补齐当前缺失的并行策略（上下文并行）和生态系统互操作能力（Chakra ET 导出）。
 
 功能域涉及以下子功能：
 
 | 编号 | 功能名称 | 类型 | 优先级 |
 |------|----------|------|--------|
-| F001 | LLaMA 训练模型框架实现 | feature | P0 |
+| F001 | Llama 训练模型框架实现 | feature | P0 |
 | F002 | 模型注册机制重构 | refactor | P0 |
 | F003 | 上下文并行通信支持 | feature | P1 |
 | F004 | Chakra ET 导出器 | feature | P1 |
@@ -63,7 +63,7 @@ aicb.py (入口)
   └─► MODEL_REGISTRY (新增：模型注册表)
         ├── "Megatron"   → (MegatronModel, MegatronWorkload)
         ├── "DeepSeek"   → (DeepSeekV3Model, MegatronWorkload)
-        ├── "LLaMA"      → (LlamaModel, MegatronWorkload)    [新增]
+        ├── "Llama"      → (LlamaModel, MegatronWorkload)    [新增]
         └── ...
             │
             ▼
@@ -72,7 +72,7 @@ workload_generator/mocked_model/
   ├── training/
   │   ├── MockedMegatron.py   ← Megatron 层定义 (不变)
   │   ├── MockedDeepSeek.py   ← DeepSeek 层定义 (不变)
-  │   ├── MockedLlama.py      ← LLaMA 层定义 [新增]
+  │   ├── MockedLlama.py      ← Llama 层定义 [新增]
   │   └── MockedGeneric.py    ← 通用层工厂 [新增]
   └── inference/
       ├── MockedDeepSeek.py
@@ -128,7 +128,7 @@ elif args.frame == "DeepSeek":
 
 #### 4.1.1 功能概述
 
-将 `aicb.py` 中硬编码的 `if/elif args.frame` 模型分发逻辑重构为基于注册表的插件模式，使新增模型框架无需修改入口文件。此功能是 F001（LLaMA 支持）和其他新模型的前置依赖。
+将 `aicb.py` 中硬编码的 `if/elif args.frame` 模型分发逻辑重构为基于注册表的插件模式，使新增模型框架无需修改入口文件。此功能是 F001（Llama 支持）和其他新模型的前置依赖。
 
 #### 4.1.2 SR设计
 
@@ -145,7 +145,7 @@ elif args.frame == "DeepSeek":
 
 **备选方案：**
 - 方案 A（采用）：Python 字典 + 显式注册函数。简单、无外部依赖、符合现有代码风格。
-- 方案 B：基于装饰器的自动注册（`@register_model("LLaMA")`）。更优雅但引入了隐式执行（import 时自动注册），与项目当前显式控制流风格不一致。
+- 方案 B：基于装饰器的自动注册（`@register_model("Llama")`）。更优雅但引入了隐式执行（import 时自动注册），与项目当前显式控制流风格不一致。
 - 方案 C：基于 `importlib` 的插件发现（扫描目录自动加载）。过度设计，256 行代码 vs 50 行，且 import 副作用风险高。
 
 选择方案 A：最小改动量，最大可控性。
@@ -172,14 +172,14 @@ aicb.py (main)            registry.py          MockedLlama.py        utils.py (g
      │  1. import MockedLlama  │                      │                     │
      │─────────────────────────│─────────────────────►│                     │
      │                         │  2. register_model(  │                     │
-     │                         │     "LLaMA",         │                     │
+     │                         │     "Llama",         │                     │
      │                         │     LlamaModel,      │                     │
      │                         │     MegatronWorkload)│                     │
      │                         │◄─────────────────────│                     │
      │                         │                      │                     │
      │  3. get_args() ──────────────────────────────────────────────────────►│
      │                         │                      │                     │
-     │  4. args (frame="LLaMA" in choices) ◄─────────────────────────────────│
+     │  4. args (frame="Llama" in choices) ◄─────────────────────────────────│
      │◄──────────────────────────────────────────────────────────────────────│
      │                         │                      │                     │
      │  5. model_cls, wl_cls = │                      │                     │
@@ -195,7 +195,7 @@ aicb.py (main)            registry.py          MockedLlama.py        utils.py (g
 
 #### 4.1.5 用户接口设计
 
-无新增 OM 接口。现有 CLI 接口不变，`--frame LLaMA` 直接从注册表查找。
+无新增 OM 接口。现有 CLI 接口不变，`--frame Llama` 直接从注册表查找。
 
 #### 4.1.6 实现接口设计
 
@@ -228,29 +228,29 @@ aicb.py (main)            registry.py          MockedLlama.py        utils.py (g
 
 ---
 
-### 4.2 F001：LLaMA 训练模型框架实现
+### 4.2 F001：Llama 训练模型框架实现
 
 #### 4.2.1 功能概述
 
-为 AICB 训练 workload generator 添加 LLaMA 模型架构支持。LLaMA 是最广泛使用的开源 LLM 架构之一（LLaMA 2/3/3.1/4），其架构特征为：RMSNorm、SwiGLU 激活、Rotary Position Embedding (RoPE)、Grouped Query Attention (GQA)。通过实现此功能，验证模型注册机制的可行性，并为后续 Gemma（使用 GeGLU）提供参考模板。
+为 AICB 训练 workload generator 添加 Llama 模型架构支持。Llama 是最广泛使用的开源 LLM 架构之一（Llama 2/3/3.1/4），其架构特征为：RMSNorm、SwiGLU 激活、Rotary Position Embedding (RoPE)、Grouped Query Attention (GQA)。通过实现此功能，验证模型注册机制的可行性，并为后续 Gemma（使用 GeGLU）提供参考模板。
 
 #### 4.2.2 SR设计
 
 | SR编号 | SR描述 |
 |--------|--------|
-| SR-LLAMA-001 | `MockedLlama.py` 实现所有 LLaMA 特有层类：`LlamaRMSNorm`、`LlamaRotaryEmbedding`、`LlamaAttention`（含 GQA）、`LlamaMLP`（含 gate/up/down projection） |
+| SR-LLAMA-001 | `MockedLlama.py` 实现所有 Llama 特有层类：`LlamaRMSNorm`、`LlamaRotaryEmbedding`、`LlamaAttention`（含 GQA）、`LlamaMLP`（含 gate/up/down projection） |
 | SR-LLAMA-002 | `LlamaModel` 组合层为：`Embedding -> [LlamaDecoderLayer * num_layers] -> RMSNorm -> LM Head` |
-| SR-LLAMA-003 | LLaMA 的 forward/backward 通信模式与 Megatron 对齐（TP 下使用 `all_reduce` / `all_gather` / `reduce_scatter`），新增 GQA 参数 `num_kv_heads` 影响 TP 分片计算 |
-| SR-LLAMA-004 | CLI 支持 `--frame LLaMA`，模型参数通过已有的 `--hidden_size`、`--num_layers`、`--num_attention_heads`、`--swiglu`、`--seq_length` 等参数配置，新增 `--num_kv_heads` 参数 |
-| SR-LLAMA-005 | LLaMA 支持 `--moe_enable`，当启用时使用 MoE FFN 替代标准 FFN（为 LLaMA 4 MoE 做准备） |
+| SR-LLAMA-003 | Llama 的 forward/backward 通信模式与 Megatron 对齐（TP 下使用 `all_reduce` / `all_gather` / `reduce_scatter`），新增 GQA 参数 `num_kv_heads` 影响 TP 分片计算 |
+| SR-LLAMA-004 | CLI 支持 `--frame Llama`，模型参数通过已有的 `--hidden_size`、`--num_layers`、`--num_attention_heads`、`--swiglu`、`--seq_length` 等参数配置，新增 `--num_kv_heads` 参数 |
+| SR-LLAMA-005 | Llama 支持 `--moe_enable`，当启用时使用 MoE FFN 替代标准 FFN（为 Llama 4 MoE 做准备） |
 
 #### 4.2.3 实现思路
 
 **方案：** 基于 `MockedMegatron.py` 参考实现，创建 `MockedLlama.py`。
 
-LLaMA 与 Megatron 的核心差异：
+Llama 与 Megatron 的核心差异：
 
-| 组件 | Megatron | LLaMA | 对 MockedModel 的影响 |
+| 组件 | Megatron | Llama | 对 MockedModel 的影响 |
 |------|----------|-------|----------------------|
 | Normalization | LayerNorm | RMSNorm | 无通信影响（仅参数规模不同） |
 | Activation | GeLU / SwiGLU(可选) | SwiGLU | 无影响（SwiGLU 已有 `--swiglu` 支持） |
@@ -259,11 +259,11 @@ LLaMA 与 Megatron 的核心差异：
 | FFN | 2-layer (w1, w2) | 3-layer (gate, up, down) | `LlamaMLP` 需三投影矩阵；gate 和 up 可合并为单一 TP 列分片 |
 | Pre/Post Norm | Post-LN | Pre-Norm (RMSNorm before attention and MLP) | 层内 compute 顺序不同，但不影响总通信量 |
 
-由于 AICB 只建模通信模式而非实际计算，LLaMA 和 Megatron 的通信拓扑基本相同（均使用 TP 列/行分片），主要差异在于参数规模和 GQA 带来的 KV 投影缩减。
+由于 AICB 只建模通信模式而非实际计算，Llama 和 Megatron 的通信拓扑基本相同（均使用 TP 列/行分片），主要差异在于参数规模和 GQA 带来的 KV 投影缩减。
 
 **备选方案：**
 - 方案 A（采用）：新建 `MockedLlama.py`，复用 Megatron 的 `ColumnLinear` 和 `RowLinear` 通信模式。代码量约 350 行。
-- 方案 B：参数化 `MockedMegatron.py`，通过配置开关支持 LLaMA。更少的文件但增加单文件复杂度（Megatron 已 676 行，添加 LLaMA 将超过 800 行限制）。
+- 方案 B：参数化 `MockedMegatron.py`，通过配置开关支持 Llama。更少的文件但增加单文件复杂度（Megatron 已 676 行，添加 Llama 将超过 800 行限制）。
 
 选择方案 A：符合项目"多小文件"原则，每个模型的层定义自包含。
 
@@ -271,11 +271,11 @@ LLaMA 与 Megatron 的核心差异：
 
 **前置条件：** F002（模型注册机制重构）已完成。
 
-**触发事件：** 用户执行 `aicb.py --frame LLaMA --hidden_size 4096 --num_layers 32 --num_attention_heads 32 --num_kv_heads 8 --swiglu ...`
+**触发事件：** 用户执行 `aicb.py --frame Llama --hidden_size 4096 --num_layers 32 --num_attention_heads 32 --num_kv_heads 8 --swiglu ...`
 
 **主流程（自然语言）：**
 
-1. `aicb.py` 解析 `--frame LLaMA`，从 `MODEL_REGISTRY` 查找 `LlamaModel` 和 `MegatronWorkload`。
+1. `aicb.py` 解析 `--frame Llama`，从 `MODEL_REGISTRY` 查找 `LlamaModel` 和 `MegatronWorkload`。
 2. 实例化 `LlamaModel(args)`：
    a. 创建 `LlamaEmbedding`（padded_vocab_size x hidden_size，含 TP 分片）
    b. 创建 `num_layers` 个 `LlamaDecoderLayer`，每层包含：
@@ -336,8 +336,8 @@ aicb/workload_generator/mocked_model/training/
 
 **CLI 接口：**
 ```bash
-# LLaMA 3 8B 类似配置
-python aicb/aicb.py --frame LLaMA \
+# Llama 3 8B 类似配置
+python aicb/aicb.py --frame Llama \
   --hidden_size 4096 \
   --num_layers 32 \
   --num_attention_heads 32 \
@@ -351,8 +351,8 @@ python aicb/aicb.py --frame LLaMA \
   --global_batch 1024 \
   --micro_batch 1
 
-# LLaMA 4 Scout (MoE) 类似配置
-python aicb/aicb.py --frame LLaMA \
+# Llama 4 Scout (MoE) 类似配置
+python aicb/aicb.py --frame Llama \
   --hidden_size 5120 \
   --num_layers 48 \
   --num_attention_heads 40 \
@@ -372,7 +372,7 @@ python aicb/aicb.py --frame LLaMA \
 **约束和限制：**
 - 要求 `num_attention_heads % num_kv_heads == 0`（GQA 分组约束）
 - 要求 `num_attention_heads % tensor_model_parallel_size == 0`（TP 分片约束）
-- 启用 MoE 时要求 `--swiglu`（LLaMA 4 的 MoE 层使用 SwiGLU 激活）
+- 启用 MoE 时要求 `--swiglu`（Llama 4 的 MoE 层使用 SwiGLU 激活）
 - Hopper 架构 GPU 需要用于 AIOB 计算时间 profiling（DeepGEMM 等专用库）
 
 #### 4.2.6 实现接口设计
@@ -384,7 +384,7 @@ python aicb/aicb.py --frame LLaMA \
 | `LlamaAttention(hidden_size, num_heads, num_kv_heads, tp, seq_len, batch_size, layer_id)` | GQA Attention 层 | Python 类 | `MockedLlama.py` | Q/K/V/O 投影；TP 通信量随 `num_kv_heads` 缩放 |
 | `LlamaMLP(hidden_size, ffn_hidden_size, tp, seq_len, batch_size, layer_id)` | SwiGLU MLP 层 | Python 类 | `MockedLlama.py` | gate/up/down 三投影；gate+up 的 TP 通信可合并 |
 | `LlamaDecoderLayer(hidden_size, ffn_hidden_size, tp, seq_len, batch_size, num_heads, num_kv_heads, layer_id)` | Decoder 层组合 | Python 类 | `MockedLlama.py` | Pre-Norm 结构：RMSNorm -> Attention -> RMSNorm -> MLP |
-| `LlamaModel(config)` | 完整 LLaMA 模型 | Python 类 | `MockedLlama.py` | 组合 embedding + decoder layers + final norm |
+| `LlamaModel(config)` | 完整 Llama 模型 | Python 类 | `MockedLlama.py` | 组合 embedding + decoder layers + final norm |
 
 #### 4.2.7 安全配置设计
 
@@ -393,7 +393,7 @@ python aicb/aicb.py --frame LLaMA \
 #### 4.2.9 DFX分析
 
 - **可靠性分析 (FMEA)：**
-  - 风险：GQA 的 KV projection TP 通信量计算错误 → 影响：workload 通信量与实际不符 → 缓解：参考 LLaMA 官方实现的 weight shapes，编写单元测试验证参数规模
+  - 风险：GQA 的 KV projection TP 通信量计算错误 → 影响：workload 通信量与实际不符 → 缓解：参考 Llama 官方实现的 weight shapes，编写单元测试验证参数规模
   - 风险：`num_kv_heads` 未设置时退化为 MHA → 影响：用户误用 → 缓解：默认值 `None` 时自动设为 `num_attention_heads`
 
 - **安全检查：** 无敏感操作。MockedModel 为本地纯计算代码。
@@ -405,7 +405,7 @@ python aicb/aicb.py --frame LLaMA \
 | SR-LLAMA-001 | 实现 `LlamaRMSNorm`、`LlamaRotaryEmbedding`、`LlamaAttention`、`LlamaMLP` 类 | `MockedLlama.py` |
 | SR-LLAMA-002 | 实现 `LlamaModel` 和 `LlamaDecoderLayer` 组合 | `MockedLlama.py` |
 | SR-LLAMA-003 | GQA TP 分片通信量实现 | `LlamaAttention` in `MockedLlama.py` |
-| SR-LLAMA-004 | `--frame LLaMA --num_kv_heads` 参数支持 | `utils/utils.py`、`aicb/aicb.py` |
+| SR-LLAMA-004 | `--frame Llama --num_kv_heads` 参数支持 | `utils/utils.py`、`aicb/aicb.py` |
 | SR-LLAMA-005 | MoE FFN 可选替代标准 FFN | `LlamaDecoderLayer` in `MockedLlama.py` |
 
 ---
@@ -570,7 +570,7 @@ GPU0 (cp_rank=0)      GPU1 (cp_rank=1)      GPU2 (cp_rank=2)      GPU3 (cp_rank=
 为后续模型（Gemma、Mistral、Falcon、DBRX）添加支持时，按以下步骤操作：
 
 1. [ ] 确定目标模型的层结构（参考 HuggingFace `modeling_*.py` 源码或官方论文）
-2. [ ] 确定通信上与已有 Megatron/LLaMA 实现的差异
+2. [ ] 确定通信上与已有 Megatron/Llama 实现的差异
 3. [ ] 创建 `Mocked<ModelName>.py`，继承 `MockedModel`
 4. [ ] 实现特有层类（如 GeGLU、parallel attention、sliding window attention 等）
 5. [ ] 实现主 Model 类的 `forward()` / `backward()`

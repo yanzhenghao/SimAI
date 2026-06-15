@@ -2,7 +2,7 @@
 Context Parallelism (CP) utilities for AICB workload generation.
 
 Implements ring-attention communication patterns used by:
-  - LLaMA 4 (long-sequence training with CP)
+  - Llama 4 (long-sequence training with CP)
   - DeepSeek-V3 (sequence parallelism + CP combination)
   - Ring Attention (https://arxiv.org/abs/2310.01889)
 

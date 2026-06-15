@@ -89,7 +89,7 @@ interface WizardState {
 }
 
 const DEFAULT_WORKLOAD_CONFIG: WorkloadConfig = {
-  model_size: 'LLaMA-7B',
+  model_size: 'Llama-7B',
   tp_size: 8,
   dp_size: 1,
   pp_size: 1,

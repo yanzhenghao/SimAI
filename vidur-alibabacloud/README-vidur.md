@@ -12,7 +12,7 @@ Vidur is a high-fidelity and extensible LLM inference system simulator. It can h
 
 1. Capacity planning and finding the best deployment configuration for your LLM deployments.
    ![Config Search](./assets/llama70b_Chat1M_ttft_tbt_90_99_2.0_0.2.jpeg)
-*Capacity per dollar for different deployment configurations vs TTFT-P90 and TBT-P99 for LLaMA2-70B.*
+*Capacity per dollar for different deployment configurations vs TTFT-P90 and TBT-P99 for Llama2-70B.*
 1. Quickly test new research ideas like new scheduling algorithms, optimizations like speculative decoding, etc.
 
 ... all without access to GPUs except for a quick initial profiling phase 🎉. We highly recommend checking out our [MLSys'24 paper](https://arxiv.org/abs/2405.05465) and [talk](https://mlsys.org/virtual/2024/poster/2667) for more details.
@@ -43,7 +43,7 @@ __Instructions on adding a new model to existing or new SKUs can be found [here]
 * Pipeline parallelism is supported for all models. The PP dimension should divide the number of layers in the model.
 * In DGX nodes, there are 8 GPUs, fully connected via NVLink. So TP1, TP2, TP4 and TP8 are supported.
 * In 4x pairwise NVLink nodes, there are 4 GPUs, so TP1, TP2 and TP4 are supported. TP4 here is less performant than TP4 in DGX nodes because (GPU1, GPU2) are connected via NVLink and (GPU3, GPU4) are connected via NVLink. but between these layers, the interconnect is slower.
-* You can use any combination of TP and PP. For example, you can run LLaMA2-70B on TP2-PP2 on a 4xA100 80GB Pairwise NVLink Node.
+* You can use any combination of TP and PP. For example, you can run Llama2-70B on TP2-PP2 on a 4xA100 80GB Pairwise NVLink Node.
 
 ## Setup
 

@@ -45,27 +45,27 @@ MODEL_CONFIGS = {
         "ffn_hidden_size": 49152, "vocab_size": 50257, "seq_length": 2048,
         "recommended": {"tp": 8, "pp": 8, "ep": 1, "gpus": 128},
     },
-    # LLaMA family (AICB benchmark suite v1.1)
-    "LLaMA-7B": {
-        "family": "LLaMA",
+    # Llama family (AICB benchmark suite v1.1)
+    "Llama-7B": {
+        "family": "Llama",
         "hidden_size": 4096, "num_layers": 32, "num_attention_heads": 32,
         "ffn_hidden_size": 11008, "vocab_size": 32000, "seq_length": 2048,
         "recommended": {"tp": 1, "pp": 1, "ep": 1, "gpus": 8},
     },
-    "LLaMA-13B": {
-        "family": "LLaMA",
+    "Llama-13B": {
+        "family": "Llama",
         "hidden_size": 5120, "num_layers": 40, "num_attention_heads": 40,
         "ffn_hidden_size": 13824, "vocab_size": 32000, "seq_length": 2048,
         "recommended": {"tp": 2, "pp": 1, "ep": 1, "gpus": 16},
     },
-    "LLaMA-65B": {
-        "family": "LLaMA",
+    "Llama-65B": {
+        "family": "Llama",
         "hidden_size": 8192, "num_layers": 80, "num_attention_heads": 64,
         "ffn_hidden_size": 28672, "vocab_size": 32000, "seq_length": 4096,
         "recommended": {"tp": 8, "pp": 2, "ep": 1, "gpus": 64},
     },
     "Llama3-405B": {
-        "family": "LLaMA",
+        "family": "Llama",
         "hidden_size": 16384, "num_layers": 128, "num_attention_heads": 128,
         "ffn_hidden_size": 53248, "vocab_size": 32000, "seq_length": 8192,
         "recommended": {"tp": 8, "pp": 16, "ep": 1, "gpus": 512},
@@ -112,7 +112,7 @@ MODEL_CONFIGS = {
     },
 }
 
-_LEGACY_MODEL_MAP = {"7B": "LLaMA-7B", "13B": "LLaMA-13B", "70B": "LLaMA-65B", "175B": "GPT-175B", "405B": "Llama3-405B"}
+_LEGACY_MODEL_MAP = {"7B": "Llama-7B", "13B": "Llama-13B", "70B": "Llama-65B", "175B": "GPT-175B", "405B": "Llama3-405B"}
 
 
 def _make_divisible(n: int, d: int) -> int:
@@ -208,7 +208,7 @@ def generate_workload_content(
     vocab_size: int,
     num_attention_heads: int,
     ffn_hidden_size: int = None,
-    model_size: str = "LLaMA-7B",
+    model_size: str = "Llama-7B",
     num_experts: int = 0,
     n_dense_layers: int = 0,
     moe_router_topk: int = 1,
@@ -217,7 +217,7 @@ def generate_workload_content(
 ) -> Tuple[str, List[str]]:
     """Generate AICB-compatible workload by delegating to SIMAI_workload."""
     resolved = _LEGACY_MODEL_MAP.get(model_size, model_size)
-    cfg = dict(MODEL_CONFIGS.get(resolved, MODEL_CONFIGS["LLaMA-7B"]))
+    cfg = dict(MODEL_CONFIGS.get(resolved, MODEL_CONFIGS["Llama-7B"]))
 
     # Allow caller overrides
     cfg["num_layers"] = num_layers
@@ -278,14 +278,14 @@ def generate_megatron_workload(
     pp_size: int = 1,
     ep_size: int = 1,
     all_gpus: int = 8,
-    model_size: str = "LLaMA-7B",
+    model_size: str = "Llama-7B",
     ga: int = 8,
     vpp: int = 1,
     aiob_enable: bool = False,
     comp_filepath: str = "",
 ) -> Tuple[str, List[str]]:
     resolved = _LEGACY_MODEL_MAP.get(model_size, model_size)
-    cfg = MODEL_CONFIGS.get(resolved, MODEL_CONFIGS["LLaMA-7B"])
+    cfg = MODEL_CONFIGS.get(resolved, MODEL_CONFIGS["Llama-7B"])
     return generate_workload_content(
         model_type="megatron",
         model_size=resolved,

@@ -1,7 +1,7 @@
 """
-Mocked LLaMA model for AICB workload generation.
+Mocked Llama model for AICB workload generation.
 
-Models LLaMA 2/3/4 architecture with:
+Models Llama 2/3/4 architecture with:
   - Group Query Attention (GQA): fewer KV heads than Q heads
   - SwiGLU FFN: gate_proj, up_proj, down_proj (3 projections)
   - RMSNorm pre-normalization (weight-only, no bias)
@@ -13,13 +13,13 @@ Reuses MegatronColumnLinear / MegatronRowLinear for tensor-parallel sharding
 and MegatronEmbedding for the embedding layer.
 
 Supported configs:
-  LLaMA-7B:   hidden=4096,  intermediate=11008, num_heads=32,  num_kv_heads=32,  layers=32
-  LLaMA-13B:  hidden=5120,  intermediate=13824, num_heads=40,  num_kv_heads=40,  layers=40
-  LLaMA-70B:  hidden=8192,  intermediate=28672, num_heads=64,  num_kv_heads=8,   layers=80
-  LLaMA-3-8B: hidden=4096,  intermediate=14336, num_heads=32,  num_kv_heads=8,   layers=32
-  LLaMA-3-70B: hidden=8192, intermediate=28672, num_heads=64,  num_kv_heads=8,   layers=80
-  LLaMA-4-Scout:  hidden=5120,  intermediate=14336, num_heads=40,  num_kv_heads=8,  layers=48, MoE(16)
-  LLaMA-4-Maverick: hidden=..., MoE(128)
+  Llama-7B:   hidden=4096,  intermediate=11008, num_heads=32,  num_kv_heads=32,  layers=32
+  Llama-13B:  hidden=5120,  intermediate=13824, num_heads=40,  num_kv_heads=40,  layers=40
+  Llama-70B:  hidden=8192,  intermediate=28672, num_heads=64,  num_kv_heads=8,   layers=80
+  Llama-3-8B: hidden=4096,  intermediate=14336, num_heads=32,  num_kv_heads=8,   layers=32
+  Llama-3-70B: hidden=8192, intermediate=28672, num_heads=64,  num_kv_heads=8,   layers=80
+  Llama-4-Scout:  hidden=5120,  intermediate=14336, num_heads=40,  num_kv_heads=8,  layers=48, MoE(16)
+  Llama-4-Maverick: hidden=..., MoE(128)
 
 Based on MockedMegatron.py patterns.
 File: MockedLlama.py
@@ -388,13 +388,13 @@ class LlamaAttention(MockedModel):
 # LlamaDecoderLayer -- Pre-norm Transformer Block
 # ---------------------------------------------------------------------------
 class LlamaDecoderLayer(MockedModel):
-    """LLaMA decoder layer with pre-normalization.
+    """Llama decoder layer with pre-normalization.
 
     Structure:
       x -> input_norm(RMSNorm) -> attention -> residual(+x)
         -> post_attn_norm(RMSNorm) -> mlp -> residual(+)
 
-    This is the standard LLaMA pre-norm architecture. Unlike Megatron's
+    This is the standard Llama pre-norm architecture. Unlike Megatron's
     post-norm design, the norm operations precede their respective sub-layers.
     """
 
@@ -482,12 +482,12 @@ class LlamaDecoderLayer(MockedModel):
 
 
 # ---------------------------------------------------------------------------
-# LlamaModel -- Complete LLaMA Architecture
+# LlamaModel -- Complete Llama Architecture
 # ---------------------------------------------------------------------------
 class LlamaModel(MockedModel):
-    """LLaMA model: Embedding -> N x DecoderLayer -> FinalNorm -> LM Head.
+    """Llama model: Embedding -> N x DecoderLayer -> FinalNorm -> LM Head.
 
-    The standard LLaMA architecture uses:
+    The standard Llama architecture uses:
       - Pre-norm (RMSNorm before attention and MLP)
       - Group Query Attention (GQA)
       - SwiGLU feed-forward network
@@ -552,7 +552,7 @@ class LlamaModel(MockedModel):
         # Final RMSNorm (precedes LM head)
         self.final_norm = LlamaRMSNorm(config.hidden_size, name="final_norm")
 
-        # LM Head: hidden -> vocab (TP-sharded, no bias in LLaMA)
+        # LM Head: hidden -> vocab (TP-sharded, no bias in Llama)
         self.lm_head = MegatronColumnLinear(
             config.hidden_size,
             config.padded_vocab_size,

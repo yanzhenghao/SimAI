@@ -52,7 +52,7 @@ def api_generate_preset():
     """Generate workload from a preset model configuration."""
     data = request.get_json(silent=True) or {}
 
-    model_size = data.get("model_size", "LLaMA-7B")
+    model_size = data.get("model_size", "Llama-7B")
     resolved = _LEGACY_MODEL_MAP.get(model_size, model_size)
     if resolved not in MODEL_CONFIGS:
         return jsonify({"error": f"Unknown model '{model_size}'. Valid: {list(MODEL_CONFIGS)}"}), 400

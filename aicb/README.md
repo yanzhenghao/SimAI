@@ -82,15 +82,15 @@ For the sake of generality, we cover those typical settings using a smallest set
 For more detailed information, please refer to [AICB_workload spec v1.1](workload/Workload_spec_v1.1.csv).
 | id  | Name          | Sequence_length | Framework | TP  | DP                    | PP  | SP     | Expert parallel number | Expert num | Zero_level |
 |:---:|:-------------:|:---------------:|:---------:|:---:|:---------------------:|:---:|:------:|:----------------------:|:----------:|:----------:|
-|  1  | LLaMA_7B      |      2048       | Megatron  |  1  |  world_size/(PP*TP)   |  1  |   -    |           -            |     -      |     -      |
+|  1  | Llama_7B      |      2048       | Megatron  |  1  |  world_size/(PP*TP)   |  1  |   -    |           -            |     -      |     -      |
 |  2  | GPT_13B       |      2048       | Megatron  |  2  |  world_size/(PP*TP)   |  1  | enable |           -            |     -      |     -      |
 |  3  | GPT_22B       |      2048       | Megatron  |  4  |  world_size/(PP*TP)   |  1  |   -    |           -            |     -      |     -      |
-|  4  | LLaMA_65B     |      4096       | Megatron  |  8  |  world_size/(PP*TP)   |  2  | enable |           -            |     -      |     -      |
+|  4  | Llama_65B     |      4096       | Megatron  |  8  |  world_size/(PP*TP)   |  2  | enable |           -            |     -      |     -      |
 |  5  | GPT_175B      |      2048       | Megatron  |  8  |  world_size/(PP*TP)   |  8  | enable |           -            |     -      |     -      |
 |  6  | GPT_175B      |      2048       | Megatron  |  8  |  world_size/(PP*TP)   |  8  | disable|           -            |     -      |     -      |
 |  7  | Llama3_405B   |      8192       | Megatron  |  8  |  world_size/(PP*TP)   |  16 | enable |           -            |     -      |     -      |
-|  8  | LLaMA_7B      |      4096       | Deepspeed |  1  |      world_size       |  1  |   -    |           -            |     -      |     2      |
-|  9  | LLaMA_65B     |      4096       | Deepspeed |  1  |      world_size       |  1  |   -    |           -            |     -      |     3      |
+|  8  | Llama_7B      |      4096       | Deepspeed |  1  |      world_size       |  1  |   -    |           -            |     -      |     2      |
+|  9  | Llama_65B     |      4096       | Deepspeed |  1  |      world_size       |  1  |   -    |           -            |     -      |     3      |
 | 10  | Mistral_8*7B  |      2048       | Megatron  |  2  |  world_size/(PP*TP)   |  1  | enable |           8            |     8      |     -      |
 
 # Setup

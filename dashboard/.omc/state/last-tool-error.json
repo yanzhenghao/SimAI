@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"EXISTING=$(lsof -ti :5001 2>/dev/null) && kill $EXISTING 2>/dev/null; sleep 1\\n\\nSIMAI_SERVER_PORT=5001 nohup python3 -m server.app -t /Users/anthony/PycharmProjects/SimAI > /tmp/simai_ser...",
-  "error": "Exit code 7",
-  "timestamp": "2026-06-09T02:43:17.945Z",
+  "tool_input_preview": "{\"command\":\"git push anthony feature/aicb-model-extensibility\",\"description\":\"Push to anthony remote via SSH\"}",
+  "error": "Exit code 128\nssh_dispatch_run_fatal: Connection to 20.205.243.166 port 22: Operation timed out\r\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.",
+  "timestamp": "2026-06-15T08:12:34.830Z",
   "retry_count": 1
 }

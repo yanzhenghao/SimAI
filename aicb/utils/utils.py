@@ -665,7 +665,7 @@ def get_params():
         default=None,
         help="Number of key-value heads for Group Query Attention (GQA). "
         "Defaults to num_attention_heads if not set (standard MHA). "
-        "Used by LLaMA, Mistral, and other GQA architectures.",
+        "Used by Llama, Mistral, and other GQA architectures.",
     )
     parser.add_argument(
         "--enable_visual",

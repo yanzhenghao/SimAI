@@ -27,6 +27,7 @@ from workload_generator.mocked_model.training.MockedDeepSeek import DeepSeekV3Mo
 from workload_generator.mocked_model.training.MockedDeepspeed import DeepspeedForCausalLM
 from workload_generator.mocked_model.training.MockedLlama import LlamaModel
 from workload_generator.mocked_model.training.MockedFalconH1 import FalconH1Model
+from workload_generator.mocked_model.training.MockedMistral import MistralModel, MixtralModel
 
 # ---------------------------------------------------------------------------
 # Workload generators
@@ -101,6 +102,20 @@ register_model(
     FalconH1Model,
     MegatronWorkload,
     "Falcon-H1 training workload (Mamba-2 SSM + GQA hybrid architecture)",
+)
+
+register_model(
+    "Mistral",
+    MistralModel,
+    MegatronWorkload,
+    "Mistral-7B training workload (GQA + SwiGLU + sliding window attention)",
+)
+
+register_model(
+    "Mixtral",
+    MixtralModel,
+    MegatronWorkload,
+    "Mixtral-8x7B/8x22B training workload (MoE 8 experts, top-2 routing)",
 )
 
 register_model(

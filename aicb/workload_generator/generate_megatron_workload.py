@@ -25,12 +25,12 @@ from workload_generator.mocked_model.training.MockedLlama import LlamaModel
 from log_analyzer.log import LogItem
 
 # Model registry: maps --frame values to model classes.
-# Add new entries here when extending to LLaMA, Mixtral, Qwen, etc.
-# Example: "LLaMA": LlamaModel  (after importing from MockedLlama)
+# Add new entries here when extending to Llama, Mixtral, Qwen, etc.
+# Example: "Llama": LlamaModel  (after importing from MockedLlama)
 MODEL_REGISTRY = {
     "Megatron": MegatronModel,
     "DeepSeek": DeepSeekV3Model,
-    "LLaMA": LlamaModel,
+    "Llama": LlamaModel,
 }
 
 

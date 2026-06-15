@@ -8,7 +8,7 @@ AICB Workload Generator 模型可扩展性研究
 日期：2026-06-15
 
 ### Slide 2: Research Questions (4 sub-questions)
-(1) AICB 能否扩展到 LLaMA, GPT, Mistral, Qwen, Gemma, Falcon, DBRX?
+(1) AICB 能否扩展到 Llama, GPT, Mistral, Qwen, Gemma, Falcon, DBRX?
 (2) 2025-2026 是否有新模型引入新并行策略/collective?
 (3) aicb 仓库近期更新 / 社区贡献?
 (4) vs PARAM, Chakra, astra-sim 的模型覆盖差距?

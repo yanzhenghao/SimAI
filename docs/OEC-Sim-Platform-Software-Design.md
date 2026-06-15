@@ -1366,7 +1366,7 @@ flowchart TB
     subgraph WS_B["Workspace B (用户 bob)"]
         WB_WL["workload_b.txt"]
         WB_TOPO["edg_topo_T002"]
-        WB_RES["LLaMA-13B_EndToEnd.csv"]
+        WB_RES["Llama-13B_EndToEnd.csv"]
     end
 
     subgraph Guards["隔离保障"]

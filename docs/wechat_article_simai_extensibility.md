@@ -1,12 +1,12 @@
 # SimAI 能力扩展：从双模型到全架构覆盖的 LLM 训练通信仿真
 
-> 本文将介绍 SimAI/AICB 项目的最新扩展能力：如何通过插件化的模型注册机制、上下文并行通信建模、Chakra 生态互通三大核心能力，将训练通信 benchmark 的覆盖范围从 Megatron/DeepSeek 扩展到 LLaMA、GPT、Mistral 等主流模型架构，并提供端到端的自动化验证体系。
+> 本文将介绍 SimAI/AICB 项目的最新扩展能力：如何通过插件化的模型注册机制、上下文并行通信建模、Chakra 生态互通三大核心能力，将训练通信 benchmark 的覆盖范围从 Megatron/DeepSeek 扩展到 Llama、GPT、Mistral 等主流模型架构，并提供端到端的自动化验证体系。
 
 ---
 
 ## 一、背景：LLM 训练通信仿真的意义与瓶颈
 
-随着大语言模型规模的持续增长，分布式训练中的通信开销已成为制约训练效率的核心瓶颈。以 LLaMA 4 Maverick（400B 总参数，128 专家 MoE）和 DeepSeek-V3（671B 总参数，2048 卡 H800 集群）为代表的大规模训练任务，通信时间占比可达 30%-50%。
+随着大语言模型规模的持续增长，分布式训练中的通信开销已成为制约训练效率的核心瓶颈。以 Llama 4 Maverick（400B 总参数，128 专家 MoE）和 DeepSeek-V3（671B 总参数，2048 卡 H800 集群）为代表的大规模训练任务，通信时间占比可达 30%-50%。
 
 **SimAI**（已被 NSDI'25 Spring 接收）是阿里巴巴开源的高精度 LLM 训练模拟器，其核心组件 **AICB**（AI Communication Benchmark）通过 mocked model 模式模拟模型各层的通信行为，无需真实 GPU 即可生成高保真的通信 workload，用于评估网络拓扑、并行策略和通信算法的性能。
 
@@ -18,7 +18,7 @@
 | DeepSpeed | ZeRO Stage 1/2/3 | DP, PP |
 | DeepSeek | DeepSeek-V3 (MLA + MoE) | TP, EP |
 
-这意味着如果你想评估 LLaMA 架构在自定义网络拓扑上的训练性能，或者想对比 Mistral/Mixtral 与 DeepSeek 的通信模式差异，你需要自己读懂源码、编写 MockedModel、修改入口逻辑——门槛相当高。
+这意味着如果你想评估 Llama 架构在自定义网络拓扑上的训练性能，或者想对比 Mistral/Mixtral 与 DeepSeek 的通信模式差异，你需要自己读懂源码、编写 MockedModel、修改入口逻辑——门槛相当高。
 
 **本次扩展的目标很明确：让 AICB 从"双模型专用工具"进化为"全架构可扩展平台"。**
 
@@ -34,7 +34,7 @@
 ├─────────────────────────────────────────────────┤
 │  F003: 上下文并行 (CP)  ← 并行策略补全层        │
 ├─────────────────────────────────────────────────┤
-│  F001: LLaMA 训练支持   ← 模型覆盖扩展层        │
+│  F001: Llama 训练支持   ← 模型覆盖扩展层        │
 ├─────────────────────────────────────────────────┤
 │  F002: 模型注册机制     ← 基础设施层            │
 └─────────────────────────────────────────────────┘
@@ -43,7 +43,7 @@
 | 功能编号 | 能力 | 类型 | 代码量 | 测试数 |
 |----------|------|------|--------|--------|
 | F002 | 插件化模型注册机制 | 基础设施 | 120 行 | 15 |
-| F001 | LLaMA 训练 workload 支持 | 模型扩展 | 375 行 | 32 |
+| F001 | Llama 训练 workload 支持 | 模型扩展 | 375 行 | 32 |
 | F003 | 上下文并行 (CP) 通信建模 | 策略扩展 | 200 行 | 29 |
 | F004 | Chakra ET 导出器 | 生态互通 | 320 行 | 30 |
 | E2E | 端到端集成测试 | 质量保障 | 400 行 | 23 |
@@ -82,8 +82,8 @@ elif args.frame == "DeepSeek":
 
 ```python
 # 新代码：一行注册
-register_model("LLaMA", LlamaModel, MegatronWorkload,
-               "LLaMA 2/3/4 training workload (GQA + SwiGLU + RMSNorm)")
+register_model("Llama", LlamaModel, MegatronWorkload,
+               "Llama 2/3/4 training workload (GQA + SwiGLU + RMSNorm)")
 
 # 入口自动分发
 from workload_generator.registry import lookup
@@ -102,13 +102,13 @@ workload_generator = entry.wl_cls(args, model)
 
 ---
 
-## 四、能力二：LLaMA 训练 workload 支持
+## 四、能力二：Llama 训练 workload 支持
 
 ### 架构差异建模
 
-LLaMA 与 Megatron 的核心架构差异在 AICB 的 mocked model 层面表现为通信量差异：
+Llama 与 Megatron 的核心架构差异在 AICB 的 mocked model 层面表现为通信量差异：
 
-| 组件 | Megatron | LLaMA | 对通信的影响 |
+| 组件 | Megatron | Llama | 对通信的影响 |
 |------|----------|-------|-------------|
 | 归一化 | LayerNorm (weight + bias) | RMSNorm (weight only) | 参数减半，无通信影响 |
 | 激活函数 | GeLU / SwiGLU(可选) | SwiGLU | 无通信影响（已有 --swiglu 支持） |
@@ -118,10 +118,10 @@ LLaMA 与 Megatron 的核心架构差异在 AICB 的 mocked model 层面表现�
 
 ### GQA 通信量缩放
 
-GQA（Group Query Attention）是 LLaMA 相比 Megatron 在通信建模上最关键的区别。以 LLaMA-3-70B 为例：
+GQA（Group Query Attention）是 Llama 相比 Megatron 在通信建模上最关键的区别。以 Llama-3-70B 为例：
 
 ```python
-# LLaMA-3-70B: 64 Q heads, 8 KV heads
+# Llama-3-70B: 64 Q heads, 8 KV heads
 # K/V 投影通信量 = (8/64) * MHA 通信量 = 1/8
 self.k_proj = MegatronColumnLinear(
     hidden_size,
@@ -147,8 +147,8 @@ self.k_proj = MegatronColumnLinear(
 ### 使用示例
 
 ```bash
-# LLaMA-3-8B 配置 (GQA: 32 Q heads, 8 KV heads, SwiGLU)
-python aicb/aicb.py --frame LLaMA \
+# Llama-3-8B 配置 (GQA: 32 Q heads, 8 KV heads, SwiGLU)
+python aicb/aicb.py --frame Llama \
   --hidden_size 4096 --ffn_hidden_size 14336 --num_layers 32 \
   --num_attention_heads 32 --num_kv_heads 8 \
   --seq_length 8192 --vocab_size 128256 --swiglu \
@@ -159,7 +159,7 @@ python aicb/aicb.py --frame LLaMA \
 
 ## 五、能力三：上下文并行通信建模
 
-上下文并行（Context Parallelism, CP）是 2025-2026 年 LLM 训练中最重要但最容易被忽视的并行策略。随着 LLaMA 4 Scout 将上下文窗口扩展到 10M tokens，序列长度远远超出单 GPU 显存容量，CP 已成为必需。
+上下文并行（Context Parallelism, CP）是 2025-2026 年 LLM 训练中最重要但最容易被忽视的并行策略。随着 Llama 4 Scout 将上下文窗口扩展到 10M tokens，序列长度远远超出单 GPU 显存容量，CP 已成为必需。
 
 ### 填补的空白
 
@@ -179,7 +179,7 @@ Backward: O_grad -> [CP all_to_all K/V_grad] -> V_grad -> K_grad -> Q_grad
 cp_kv_size = 2 × num_kv_heads × head_dim × seq_len × batch_size (bytes)
 ```
 
-对于 GQA 模型，`num_kv_heads < num_heads`，CP 通信量自动缩减。例如 LLaMA-3-8B 的 `num_kv_heads=8`，CP 通信量仅为同等规模 MHA 模型的 1/4。
+对于 GQA 模型，`num_kv_heads < num_heads`，CP 通信量自动缩减。例如 Llama-3-8B 的 `num_kv_heads=8`，CP 通信量仅为同等规模 MHA 模型的 1/4。
 
 ### 基础设施变更
 
@@ -194,8 +194,8 @@ cp_kv_size = 2 × num_kv_heads × head_dim × seq_len × batch_size (bytes)
 ### 使用示例
 
 ```bash
-# LLaMA 长上下文训练: TP=4, CP=2 (seq_len=4096 -> 每个 CP rank 处理 2048 tokens)
-python aicb/aicb.py --frame LLaMA --context-parallel-size 2 \
+# Llama 长上下文训练: TP=4, CP=2 (seq_len=4096 -> 每个 CP rank 处理 2048 tokens)
+python aicb/aicb.py --frame Llama --context-parallel-size 2 \
   --tensor_model_parallel_size 4 --seq_length 4096 ...
 ```
 
@@ -229,7 +229,7 @@ ChakraExporter 将 AICB 的 LogItem 列表映射为 Chakra ET JSON 格式：
 ### 使用示例
 
 ```bash
-python aicb/aicb.py --frame LLaMA --export-chakra llama_workload.et.json ...
+python aicb/aicb.py --frame Llama --export-chakra llama_workload.et.json ...
 ```
 
 输出的 JSON 文件可直接被 ASTRA-sim 消费：
@@ -248,7 +248,7 @@ simulator -> Chakra ET (JSON) -> ASTRA-sim -> ns-3 packet-level simulation
            │ 23 E2E  │  ← 完整流水线: Config→Model→Workload→Chakra
            │  Tests  │
       ┌────┴─────────┴────┐
-      │   30 + 29 + 32    │  ← 功能测试: Chakra导出 + CP通信 + LLaMA层
+      │   30 + 29 + 32    │  ← 功能测试: Chakra导出 + CP通信 + Llama层
       │   Unit Tests      │
  ┌────┴───────────────────┴────┐
  │      15 Registry Tests      │  ← 基础设施测试
@@ -258,7 +258,7 @@ simulator -> Chakra ET (JSON) -> ASTRA-sim -> ns-3 packet-level simulation
 
 E2E 测试覆盖的关键场景：
 
-- **多模型一致性**：相同 TP 配置下，Megatron 和 LLaMA 均产生 TP 通信
+- **多模型一致性**：相同 TP 配置下，Megatron 和 Llama 均产生 TP 通信
 - **并行策略组合**：TP=4 + CP=2 的注意力层同时产生 TP 和 CP 通信
 - **边界条件**：单层模型、100 层模型、128K 词表、空 workload 导出
 - **Chakra 回环**：导出 JSON -> 重新解析 -> 验证结构完整性（强制字段、唯一 ID）
@@ -330,7 +330,7 @@ python3 -m pytest tests/ -v
 
 | 维度 | Before | After |
 |------|--------|-------|
-| 模型覆盖 | Megatron, DeepSeek | + LLaMA 2/3/4 (GQA), Qwen3 (已有推理), 可扩展到 Mistral/Gemma/Falcon |
+| 模型覆盖 | Megatron, DeepSeek | + Llama 2/3/4 (GQA), Qwen3 (已有推理), 可扩展到 Mistral/Gemma/Falcon |
 | 并行策略 | TP, PP, DP, EP, SP | + 上下文并行 (CP), CP+TP 组合 |
 | 生态互通 | 专有 CSV | + Chakra ET JSON (ASTRA-sim/PARAM/MLSynth 兼容) |
 | 可扩展性 | 硬编码 if/elif 链 | 注册表插件模式 (3 行添加新模型) |
@@ -338,7 +338,7 @@ python3 -m pytest tests/ -v
 
 **后续规划**：
 
-- **F005**: Gemma / Mistral / Falcon / DBRX 模型模板（基于 LLaMA 模板快速派生）
+- **F005**: Gemma / Mistral / Falcon / DBRX 模型模板（基于 Llama 模板快速派生）
 - **F006**: DualPipe 流水线调度建模（DeepSeek-V3 的双向流水线并行算法）
 - **F007**: 容错通信建模（链路故障、straggler 注入）
 

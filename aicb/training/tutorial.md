@@ -243,7 +243,7 @@ Here is an explanation of a the generated Workload file:
 ![Scaling Graph](../images/tutorial_5.png)
 
 ### Creating customized Models
-AICB offers remarkable extensibility. In addition to supporting GPT and LLaMA series models, it also allows for the creation of workloads for custom model architectures. This flexibility means you can adapt AICB to generate and test communication and computation patterns for a wide variety of models, beyond the pre-configured options, making it an invaluable tool for benchmarking and optimizing diverse AI training frameworks.
+AICB offers remarkable extensibility. In addition to supporting GPT and Llama series models, it also allows for the creation of workloads for custom model architectures. This flexibility means you can adapt AICB to generate and test communication and computation patterns for a wide variety of models, beyond the pre-configured options, making it an invaluable tool for benchmarking and optimizing diverse AI training frameworks.
 Custom models can be built using the MockedParam and MockedModel base classes. For specific implementation details, you can refer to the existing MockedMegatron and MockedDeepSpeed implementations.
 
 Here is an example of a DeepSpeed Llama model:

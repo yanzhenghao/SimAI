@@ -6,7 +6,7 @@
 
 本报告系统研究了 AICB（AI Communication Benchmark，aliyun/aicb）workload generator 的模型可扩展性。通过源码分析、竞品对比、文献调研和实际实施，得出以下核心结论：
 
-1. **AICB 可以扩展到 LLaMA、GPT、Mistral/Mixtral、Qwen、Gemma、Falcon、DBRX 等主流架构**，且 LLaMA 支持和通用注册机制已完成实施（129 个测试验证）。
+1. **AICB 可以扩展到 Llama、GPT、Mistral/Mixtral、Qwen、Gemma、Falcon、DBRX 等主流架构**，且 Llama 支持和通用注册机制已完成实施（129 个测试验证）。
 2. **2025-2026 年新模型引入了 Context Parallelism、DualPipe、FP8 训练等新并行策略**，其中 CP 已在 AICB 中实现支持。
 3. **aliyun/aicb 仓库在 2025 年 11 月发布了 AICB 2.1 重大更新**，增加了推理 workload、DeepSeek 训练（社区贡献）、Qwen3 推理支持。
 4. **与 PARAM/MLSynth/RAPID-LLM 相比，AICB 的主要差距在于 Chakra 生态互通和 CP 支持**，这两个空白已在本项目中填补。
@@ -65,18 +65,18 @@ class MegatronAttention(MockedModel):
 
 | 模型 | 可行性 | 依据 | 关键差异 |
 |------|--------|------|----------|
-| **LLaMA** | **已实施** | RMSNorm + SwiGLU + RoPE + GQA。SwiGLU 已有 `--swiglu` 支持。已实现完整的 `MockedLlama.py`（375 行，6 个新类，32 个测试）。 | GQA 使 K/V 通信量缩减 `n_kv_heads / n_heads` 倍。 |
+| **Llama** | **已实施** | RMSNorm + SwiGLU + RoPE + GQA。SwiGLU 已有 `--swiglu` 支持。已实现完整的 `MockedLlama.py`（375 行，6 个新类，32 个测试）。 | GQA 使 K/V 通信量缩减 `n_kv_heads / n_heads` 倍。 |
 | **GPT** | HIGH（未实施） | 比 Megatron 更简单：LayerNorm + GeLU + MHA。本质上是已实现 Megatron 模型的子集。 | 无显著差异。 |
-| **Mistral** | HIGH（未实施） | 与 LLaMA 几乎相同（RMSNorm、SwiGLU、RoPE、GQA），增加 sliding window attention。 | Sliding window 不影响通信模式。 |
+| **Mistral** | HIGH（未实施） | 与 Llama 几乎相同（RMSNorm、SwiGLU、RoPE、GQA），增加 sliding window attention。 | Sliding window 不影响通信模式。 |
 | **Mixtral** | HIGH（未实施） | MoE 变体（8 专家，top-2 路由）。MoE 通信模式已在 `MOEMLP` 和 `DeepSeekMoE` 中实现。 | 专家数更少（8 vs DeepSeek 的 64/256），但路由通信模式相同。 |
 | **Qwen3** | 部分完成 | 推理支持已存在（`MockedQwen3Moe.py`、`MockedQwen3Next.py`）。训练支持需要补充 forward/backward 方法。 | Qwen3-MoE 使用与 DeepSeek 类似的 MoE 专家路由。 |
-| **Gemma** | HIGH（未实施） | GeGLU + RoPE + MHA。标准 decoder-only，可从 LLaMA 模板快速派生。 | GeGLU 替代 SwiGLU（仅影响激活函数，不影响通信）。 |
+| **Gemma** | HIGH（未实施） | GeGLU + RoPE + MHA。标准 decoder-only，可从 Llama 模板快速派生。 | GeGLU 替代 SwiGLU（仅影响激活函数，不影响通信）。 |
 | **Falcon** | HIGH（未实施） | 使用 parallel attention（attention + MLP 并行执行）。需要新的 `FalconDecoderLayer` 类。 | Parallel architecture 改变了层组合方式，但通信模式不变。 |
 | **DBRX** | HIGH（未实施） | 16 专家 MoE（top-4 路由），细粒度专家。专家路由基础设施已存在。 | 更多专家（16 vs 8），top-4 路由（vs top-2），但 EP 通信模式相同。 |
 
 ### 1.3 扩展路径验证
 
-LLaMA 训练支持的完整实施验证了扩展路径的可行性。新模型只需：
+Llama 训练支持的完整实施验证了扩展路径的可行性。新模型只需：
 
 1. 创建 `MockedNewModel.py`，实现层类和 Model 类（~300-400 行）
 2. 在 `_bootstrap.py` 中添加 import + `register_model()` 调用（3 行）
@@ -93,7 +93,7 @@ LLaMA 训练支持的完整实施验证了扩展路径的可行性。新模型�
 | 模型 | 发布时间 | 关键特征 | 对 AICB 的影响 |
 |------|----------|----------|---------------|
 | **DeepSeek-V3** | 2024-12 发布 / 2025 开源周 | 671B MoE（37B 活跃），MLA 注意力，Multi-Token Prediction，FP8 训练，DualPipe 流水线 | 已在 AICB 中支持（含 FP8 因子）。DualPipe 调度待实现。 |
-| **LLaMA 4 Scout/Maverick** | 2025-04 | MoE（16/128 专家），10M 上下文，Early Fusion 多模态 | MoE 通信已有支持。10M 上下文需要 CP（已在 AICB 中实现）。 |
+| **Llama 4 Scout/Maverick** | 2025-04 | MoE（16/128 专家），10M 上下文，Early Fusion 多模态 | MoE 通信已有支持。10M 上下文需要 CP（已在 AICB 中实现）。 |
 | **Qwen 3** | 2025-04 | Hybrid thinking 模式，Gated Delta Networks，MoE 和非 MoE 变体 | 推理已支持。训练支持需要补充。 |
 | **Gemma 3** | 2025 | 128K 上下文，多模态，140+ 语言 | 标准 decoder-only，扩展简单。 |
 | **Mistral Large 3** | 2025 | 675B MoE，Apache 2.0 | MoE 通信已有支持。 |
@@ -113,7 +113,7 @@ LLaMA 训练支持的完整实施验证了扩展路径的可行性。新模型�
 
 RAPID-LLM（arXiv 2512.19606，2025-12-22）是加州大学洛杉矶分校等机构发表的统一 LLM 训练/推理性能建模框架。与研究问题的相关性：
 
-- **RAPID-LLM 支持 LLaMA、GPT、Mixtral**，通过 DeepFlow 前端接受抽象 LLM 规范（层数、hidden dim、heads 等）生成 Chakra Execution Traces。AICB 可以采用类似的参数化方法。
+- **RAPID-LLM 支持 Llama、GPT、Mixtral**，通过 DeepFlow 前端接受抽象 LLM 规范（层数、hidden dim、heads 等）生成 Chakra Execution Traces。AICB 可以采用类似的参数化方法。
 - **RAPID-LLM 支持 5 种空间并行**（DP, TP, PP, SP, CP）+ ZeRO 1-3 + 重计算。AICB 当前缺少 CP 和 ZeRO（通过 Megatron 路径）。
 - **RAPID-LLM 使用 Chakra ET 作为中间表示**，连接扩展的 Astra-Sim 后端。证实了 Chakra 正在成为训练 workload 表示的新兴标准。
 - **RAPID-LLM 未与 AICB 或 PARAM 进行直接比较**，意味着跨工具基准对比需要开展原创性工作。
@@ -162,7 +162,7 @@ RAPID-LLM（arXiv 2512.19606，2025-12-22）是加州大学洛杉矶分校等机
 |------|-------------------|---------------|-------------|-----------|---------------------|
 | **角色** | Workload 生成 + 物理重放 | 统一性能建模 | 合成 workload 生成 | 执行 trace 重放基准 | 仿真后端 |
 | **追踪格式** | 专有 CSV / LogItem | **Chakra ET** | **Chakra ET** | 消耗 Chakra ET | 消耗 Chakra ET |
-| **模型覆盖** | Megatron, DeepSpeed, DeepSeek, Qwen3(推理) + **LLaMA（本次实施）** | LLaMA, GPT, Mixtral（可参数化） | 完全可配置（层、hidden dim 等） | 任何 Chakra trace | 取决于前端 |
+| **模型覆盖** | Megatron, DeepSpeed, DeepSeek, Qwen3(推理) + **Llama（本次实施）** | Llama, GPT, Mixtral（可参数化） | 完全可配置（层、hidden dim 等） | 任何 Chakra trace | 取决于前端 |
 | **并行策略** | TP, PP, DP, EP, SP + **CP（本次实施）** | TP, PP, DP, SP, CP, ZeRO 1-3 | TP, PP, DP | N/A（重放） | 取决于前端 |
 | **硬件感知** | AIOB GPU profiling | 高级（tiling, HBM/L2/SRAM） | 基本（Roofline） | 真实硬件 | ns-3 数据包级 |
 | **容错建模** | 否 | 是（链路故障、重试） | 是（straggler 注入） | 否 | 否 |
@@ -175,8 +175,8 @@ RAPID-LLM（arXiv 2512.19606，2025-12-22）是加州大学洛杉矶分校等机
 |------|----------|----------|
 | **追踪格式标准化**：AICB 缺少 Chakra ET 导出 | 高 | ✅ 已实施 `ChakraExporter`（F004, 320 行, 30 个测试） |
 | **上下文并行支持**：AICB 不支持 CP | 高 | ✅ 已实施 CP 通信建模（F003, 200 行, 29 个测试） |
-| **模型覆盖广度**：仅 Megatron/DeepSeek | 中-高 | ✅ 已实施 LLaMA（F001, 375 行, 32 个测试）+ 注册机制（F002） |
-| **ZeRO 支持**：仅通过 DeepSpeed 路径 | 中 | ❌ 未在 Megatron/LLaMA 路径中实现 FSDP |
+| **模型覆盖广度**：仅 Megatron/DeepSeek | 中-高 | ✅ 已实施 Llama（F001, 375 行, 32 个测试）+ 注册机制（F002） |
+| **ZeRO 支持**：仅通过 DeepSpeed 路径 | 中 | ❌ 未在 Megatron/Llama 路径中实现 FSDP |
 | **容错建模**：不支持链路故障/straggler | 中 | ❌ 仅 RAPID-LLM 和 MLSynth 支持 |
 | **参数化程度**：硬编码 Python 类 | 低 | ⚠️ 可通过注册机制改善，但模型核心仍为硬编码类 |
 
@@ -215,24 +215,24 @@ AICB 生成 workload → Chakra ET JSON → ASTRA-sim 仿真（ns-3 数据包级
 
 | 编号 | 建议 | 优先级 | 工作量 | 状态 |
 |------|------|--------|--------|------|
-| F001 | LLaMA 训练支持 | P0 | 3 天 | ✅ 已实施 |
+| F001 | Llama 训练支持 | P0 | 3 天 | ✅ 已实施 |
 | F002 | 模型注册机制 | P0 | 1 天 | ✅ 已实施 |
 | F003 | 上下文并行支持 | P1 | 2 天 | ✅ 已实施 |
 | F004 | Chakra ET 导出器 | P1 | 2 天 | ✅ 已实施 |
 | F005 | Gemma / Mistral / Falcon / DBRX 模板 | P2 | 4 天 | 待实施 |
 | F006 | DualPipe 流水线调度 | P2 | 5 天 | 待实施 |
 | F007 | 容错通信建模 | P3 | 10 天 | 待实施 |
-| F008 | ZeRO/FSDP 在 Megatron/LLaMA 路径中 | P2 | 3 天 | 待实施 |
+| F008 | ZeRO/FSDP 在 Megatron/Llama 路径中 | P2 | 3 天 | 待实施 |
 
 ### 5.2 短期行动项（1-2 周）
 
-1. **基于 LLaMA 模板快速派生，添加 Mistral/Mixtral 支持**
+1. **基于 Llama 模板快速派生，添加 Mistral/Mixtral 支持**
    - Mistral：直接复用 `MockedLlama.py`，修改 sliding window 参数
    - Mixtral：继承 `LlamaDecoderLayer`，添加 8 专家 MoE FFN（复用 `MOEMLP`）
    - 预计每个模型 200-300 行
 
 2. **为 AICB 变更提交上游 PR 至 aliyun/aicb**
-   - 提交 LLaMA + 注册机制作为独立 PR
+   - 提交 Llama + 注册机制作为独立 PR
    - 提交 Chakra 导出器 + CP 支持作为独立 PR
    - 项目已有活跃的社区贡献流程
 
@@ -241,8 +241,8 @@ AICB 生成 workload → Chakra ET JSON → ASTRA-sim 仿真（ns-3 数据包级
 
 ### 5.3 中期行动项（1-3 月）
 
-4. **实现 ZeRO/FSDP 参数分片在 Megatron/LLaMA 路径中的支持**
-   - 当前仅 DeepSpeed 路径支持 ZeRO。Megatron 和 LLaMA 路径可通过 FSDP 通信模式（all_gather + reduce_scatter for weight sharding）支持等效功能。
+4. **实现 ZeRO/FSDP 参数分片在 Megatron/Llama 路径中的支持**
+   - 当前仅 DeepSpeed 路径支持 ZeRO。Megatron 和 Llama 路径可通过 FSDP 通信模式（all_gather + reduce_scatter for weight sharding）支持等效功能。
 
 5. **实现 DualPipe 流水线调度**
    - 需要新的 `DualPipeWorkload` 类，以双向重叠方式对 micro-batch 进行排序
@@ -261,8 +261,8 @@ AICB 生成 workload → Chakra ET JSON → ASTRA-sim 仿真（ns-3 数据包级
 |------|------|------|--------|------|
 | `aicb/workload_generator/registry.py` | 新建 | 116 | 15 | F002：模型注册机制 |
 | `aicb/workload_generator/_bootstrap.py` | 新建 | 102 | 0 | F002：5 个模型框架注册 |
-| `aicb/workload_generator/mocked_model/training/MockedLlama.py` | 重写 | 375 | 32 | F001：LLaMA 训练支持 |
-| `aicb/workload_generator/mocked_model/training/AiobLlama.py` | 新建 | 290 | 0 | F001：LLaMA GPU profiling |
+| `aicb/workload_generator/mocked_model/training/MockedLlama.py` | 重写 | 375 | 32 | F001：Llama 训练支持 |
+| `aicb/workload_generator/mocked_model/training/AiobLlama.py` | 新建 | 290 | 0 | F001：Llama GPU profiling |
 | `aicb/utils/chakra_export.py` | 新建 | 320 | 30 | F004：Chakra ET 导出 |
 | `aicb/aicb.py` | 修改 | - | 0 | F002：注册表分发 |
 | `aicb/utils/utils.py` | 修改 | +50 | 0 | F002+F003+F004：动态 choices、CP 验证、Chakra CLI |
@@ -283,4 +283,4 @@ AICB 生成 workload → Chakra ET JSON → ASTRA-sim 仿真（ns-3 数据包级
 | Chakra 项目 | 一级来源（开源项目） | https://github.com/mlcommons/chakra |
 | ASTRA-sim 教程 | 一级来源（文档） | https://astra-sim.github.io/ |
 | DeepSeek-V3 技术报告 | 一级来源（学术论文） | arXiv 2412.19437 |
-| LLaMA 4 发布信息 | 二级来源（公司博客） | Meta AI Blog (2025-04) |
+| Llama 4 发布信息 | 二级来源（公司博客） | Meta AI Blog (2025-04) |

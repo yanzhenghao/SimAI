@@ -5,13 +5,13 @@ Tests the full pipeline:
   Model registration -> Model instantiation -> Workload generation -> Chakra export
 
 Covers:
-  - Multi-model: Megatron, DeepSeek, LLaMA
+  - Multi-model: Megatron, DeepSeek, Llama
   - Multi-parallelism: TP, CP, EP, GQA
   - Full pipeline: model -> forward -> backward -> Chakra JSON
   - Cross-framework consistency checks
   - Edge cases: single layer, large vocab, zero CP
 
-These tests exercise the integration of F001 (LLaMA), F002 (Registry),
+These tests exercise the integration of F001 (Llama), F002 (Registry),
 F003 (Context Parallelism), and F004 (Chakra Exporter).
 
 Run:
@@ -46,7 +46,7 @@ from workload_generator.mocked_model.training.MockedDeepSeek import DeepSeekV3Mo
 # ============================================================================
 
 class LlamaConfig:
-    """LLaMA model configuration factory."""
+    """Llama model configuration factory."""
     def __init__(self, **kwargs):
         defaults = dict(
             padded_vocab_size=32000, hidden_size=4096, ffn_hidden_size=11008,
@@ -87,7 +87,7 @@ class TestE2EFullPipeline:
     """Tests the complete AICB pipeline end-to-end."""
 
     def test_llama_full_pipeline_tp4(self):
-        """LLaMA-7B with TP=4: register -> model -> workload -> Chakra."""
+        """Llama-7B with TP=4: register -> model -> workload -> Chakra."""
         config = LlamaConfig(tensor_model_parallel_size=4)
         model = LlamaModel(config)
 
@@ -176,7 +176,7 @@ class TestE2EMultiModelConsistency:
 
     def test_same_tp_produces_comm_across_models(self):
         """TP=4 should produce TP communication for all model frameworks."""
-        # LLaMA
+        # Llama
         llama = LlamaModel(LlamaConfig(tensor_model_parallel_size=4))
         llama_fwd = llama.forward()
         llama_tp = [item for item in llama_fwd.workload
@@ -191,7 +191,7 @@ class TestE2EMultiModelConsistency:
         assert len(megatron_tp) > 0
 
     def test_llama_parameter_count_consistent(self):
-        """LLaMA parameter count should be deterministic for fixed config."""
+        """Llama parameter count should be deterministic for fixed config."""
         config1 = LlamaConfig()
         config2 = LlamaConfig()
         model1 = LlamaModel(config1)
@@ -201,7 +201,7 @@ class TestE2EMultiModelConsistency:
         assert p1 == p2, f"Parameter count should be deterministic: {p1} != {p2}"
 
     def test_llama_attention_has_all_projections(self):
-        """LLaMA attention should have Q, K, V, O projections."""
+        """Llama attention should have Q, K, V, O projections."""
         attn = LlamaAttention(32, 8, 4096, tp=1, cp=1, seq_len=2048,
                               batch_size=1, layer_id=0)
         assert hasattr(attn, "q_proj")
@@ -260,7 +260,7 @@ class TestE2EParallelismVariation:
         assert len(cp_items) > 0, "CP=2 should produce CP communications"
 
     def test_large_vocab_does_not_break(self):
-        """LLaMA with 128K vocab should still produce valid workload."""
+        """Llama with 128K vocab should still produce valid workload."""
         config = LlamaConfig(padded_vocab_size=128256, num_layers=1,
                              tensor_model_parallel_size=2)
         model = LlamaModel(config)
@@ -476,7 +476,7 @@ class TestE2EWorkloadGeneration:
         assert len(fwd_cp) == len(bwd_cp) == config.num_layers
 
     def test_megatron_model_rmsnorm_vs_layernorm(self):
-        """LLaMA RMSNorm has fewer params than Megatron FusedLayernorm."""
+        """Llama RMSNorm has fewer params than Megatron FusedLayernorm."""
         llama_norm = LlamaRMSNorm(4096)
         llama_params = sum(p.numel() for p in llama_norm.parameters())
 

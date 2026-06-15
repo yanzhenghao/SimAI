@@ -1,7 +1,7 @@
 """
-AIOB (AI Operator Benchmark) GPU compute-time profiler for LLaMA models.
+AIOB (AI Operator Benchmark) GPU compute-time profiler for Llama models.
 
-Measures real GPU execution times for LLaMA-specific operators:
+Measures real GPU execution times for Llama-specific operators:
   - RMSNorm (weight-only, no bias)
   - RoPE (cos/sin application to Q/K)
   - GQA Attention (Q/K/V/O projections with grouped KV heads)
@@ -9,7 +9,7 @@ Measures real GPU execution times for LLaMA-specific operators:
   - LlamaDecoderLayer (full pre-norm block)
 
 Usage:
-    torchrun --nproc_per_node=<gpus> AiobLlama.py --frame LLaMA --aiob_enable ...
+    torchrun --nproc_per_node=<gpus> AiobLlama.py --frame Llama --aiob_enable ...
 
 Requirements:
     - NVIDIA GPU (Hopper recommended for FlashAttention-3)
@@ -248,7 +248,7 @@ class LlamaMLP(torch.nn.Module):
 # LlamaModel -- Full AIOB profiled model
 # ---------------------------------------------------------------------------
 class LlamaModel(torch.nn.Module):
-    """Complete LLaMA model for AIOB GPU compute-time profiling.
+    """Complete Llama model for AIOB GPU compute-time profiling.
 
     Measures per-operator GPU time for each component and stores in
     self.time_list for consumption by the AICB compute-cache pipeline.
@@ -332,11 +332,11 @@ if __name__ == "__main__":
 
     args = get_args()
     assert args.aiob_enable, "AIOB profiling requires --aiob_enable flag"
-    assert args.frame == "LLaMA", "AiobLlama requires --frame LLaMA"
+    assert args.frame == "Llama", "AiobLlama requires --frame Llama"
 
     model = LlamaModel(args).cuda()
     # Use the Comp_with_aiob pipeline from utils to save timing data
-    print(f"[AiobLlama] Profiling LLaMA model with {args.num_layers} layers...")
+    print(f"[AiobLlama] Profiling Llama model with {args.num_layers} layers...")
     print(f"[AiobLlama] hidden={args.hidden_size}, intermediate={args.ffn_hidden_size}")
     print(f"[AiobLlama] Q heads={args.num_attention_heads}, KV heads={args.num_kv_heads}")
     print(f"[AiobLlama] TP={args.tensor_model_parallel_size}, seq_len={args.seq_length}")

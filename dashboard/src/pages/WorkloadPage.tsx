@@ -12,7 +12,7 @@ import { useWizardStore } from '../stores/wizard-store';
 import { generatePresetWorkload, generateCustomWorkload, saveFile, fetchModelFamilies } from '../api/simulation-api';
 
 const MODE_OPTIONS = [
-  { value: 'preset' as const, label: 'Preset Model', description: 'Choose from GPT/LLaMA/DeepSeek/Mixtral presets' },
+  { value: 'preset' as const, label: 'Preset Model', description: 'Choose from GPT/Llama/DeepSeek/Mixtral presets' },
   { value: 'custom' as const, label: 'Custom Layers', description: 'Define custom layer configurations' },
   { value: 'upload' as const, label: 'Upload File', description: 'Upload an existing workload file' },
 ];
@@ -44,7 +44,7 @@ export function WorkloadPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [families, setFamilies] = useState<Record<string, readonly ModelInfo[]>>({});
-  const [selectedFamily, setSelectedFamily] = useState('LLaMA');
+  const [selectedFamily, setSelectedFamily] = useState('Llama');
 
   // World Size = TP × DP × PP × EP
   useEffect(() => {

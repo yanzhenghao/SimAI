@@ -341,7 +341,7 @@ class TestJSONExport:
 # ---------------------------------------------------------------------------
 class TestRealisticWorkload:
     def test_llama_microbatch_workload(self):
-        """Simulate a LLaMA single-layer microbatch: forward + backward."""
+        """Simulate a Llama single-layer microbatch: forward + backward."""
         items = FakeWorkload([
             # Forward
             FakeLogItem(CommType.computation, stage="forward.embedding",
