@@ -312,6 +312,50 @@ Source: https://qwen-ai.com/qwen-3-5 (fetched 2025-06-15, 38KB).
 
 ---
 
+## Qwen3 Technical Report (arxiv 2505.09388, May 2025)
+
+Fetched via ar5iv.labs.arxiv.org HTML (140KB). The paper covers all 8 Qwen3
+models and confirms the architectural findings from config.json.
+
+### Architecture confirmation
+
+- Paper Table 1 (dense): Layers, Q/KV Heads, Tie Embedding, Context Length for
+  all 6 dense models. Matches config.json exactly.
+- Paper Table 2 (MoE): Layers, Q/KV Heads, Experts (128/8), Context Length.
+  Matches config.json.
+- QK-Norm replaces QKV-bias from Qwen2: "remove QKV-bias used in Qwen2 and
+  introduce QK-Norm to the attention mechanism." Confirms QK-Norm is architectural,
+  not configurable.
+- MoE: "128 total experts with 8 activated per token. Unlike Qwen2.5-MoE, the
+  Qwen3-MoE design excludes shared experts."
+- Tokenizer: BBPE, vocabulary 151,669 (config.json has 151,936 -- the difference
+  is special tokens).
+
+### Training strategy
+
+Three-stage process:
+1. **General Stage (S1)**: 30T+ tokens at seq_len=4096. 119 languages. Full
+   language proficiency and world knowledge.
+2. **Reasoning Stage (S2)**: ~5T tokens at seq_len=4096. Higher proportion of
+   STEM/code/reasoning/synthetic data. Faster LR decay.
+3. **Long Context Stage**: Hundreds of billions of tokens at seq_len=32768.
+   75% of text between 16384-32768 tokens, 25% between 4096-16384.
+
+Total: 36 trillion tokens. RoPE theta increased from 10,000 to 1,000,000 via
+ABF technique. YARN + Dual Chunk Attention for 4x inference context extension.
+
+### What the paper does NOT include
+
+- Exact global batch size, micro_batch, learning rate schedule values
+- Optimizer hyperparameters (beta1, beta2, epsilon, weight decay)
+- GPU count, parallelism configuration (TP/PP/DP)
+- These must be sourced from NVIDIA Megatron-Bridge recipes (TP=4/PP=16/EP=8/CP=2
+  for 235B) and Megatron conventions (~4M tokens global batch).
+
+Source: https://ar5iv.labs.arxiv.org/html/2505.09388 (fetched 2025-06-15, 140KB).
+
+---
+
 ## How to Use
 
 ### Quick smoke test (standalone Python, no GPU needed)
