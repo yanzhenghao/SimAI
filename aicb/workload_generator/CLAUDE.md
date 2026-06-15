@@ -5,6 +5,13 @@
 > for all 22 supported models, and the complete research methodology (28 sources
 > across 5 sub-questions). This CLAUDE.md is the operational reference; consult
 > RESEARCH.md for the "why" behind the architecture decisions.
+>
+> Primary external sources:
+> - Qwen3 Technical Report: ar5iv.labs.arxiv.org/html/2505.09388 (140KB HTML)
+> - Qwen3.5 official blog: qwen-ai.com/qwen-3-5 (38KB, March 2026)
+> - Model configs: hf-mirror.com (16 models), modelscope.cn (1 gated model)
+> - HF Transformers source: ghproxy.net (modeling_qwen3.py, modeling_qwen3_5.py,
+>   modeling_llama.py, modular_qwen3.py)
 
 ## Architecture
 
