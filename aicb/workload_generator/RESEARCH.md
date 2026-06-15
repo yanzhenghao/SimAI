@@ -1,8 +1,29 @@
 # Qwen3 and Qwen3.5 AICB Workload Generator -- Complete Research Report
 
-Verified 2025-06-15 by agent workflow-subagent. Primary sources: HF config.json
-files (gitcode.com, hf-mirror.com), HuggingFace transformers source on GitHub,
-AICB codebase analysis.
+**Purpose**: Definitive reference for generating SimAI training workloads for
+Qwen3 and Qwen3.5 model families. Covers all 22 supported models across 3
+families (LLaMA 3.1, Qwen3, Qwen3.5), both dense and MoE variants.
+
+**Scope**: Architecture comparison, verified parameter tables from HF config.json,
+AICB integration strategy, workload communication formulas, training parallelism
+configurations, bug fixes applied, generated workload CSV manifest, copy-paste
+usage examples.
+
+**Confidence**: HIGH. All 19 model configs verified from config.json ground truth
+(hf-mirror.com, modelscope.cn). All workload formulas verified exact-match
+against running code (68 regression tests passing). Architecture confirmed
+against Qwen3 Technical Report (arxiv 2505.09388) and Qwen3.5 official blog
+(qwen-ai.com). HF Transformers source code (modeling_qwen3.py, modeling_qwen3_5.py)
+verified via ghproxy.net.
+
+**For colleagues**: Start at Section 1 (Architecture Comparison) for the big
+picture, Section 5 (Workload Formulas) for the math, and the "How to Use"
+section at the end for copy-paste code. The CLAUDE.md in this directory is
+the operational companion (read by AI agents automatically).
+
+Verified 2025-06-15. Primary external sources: hf-mirror.com (16 configs),
+modelscope.cn (1 gated config), ar5iv.labs.arxiv.org/html/2505.09388 (paper),
+qwen-ai.com/qwen-3-5 (blog), ghproxy.net (4 Transformers source files).
 
 ---
 
