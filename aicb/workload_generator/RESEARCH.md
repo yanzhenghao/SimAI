@@ -309,3 +309,101 @@ performance context:
   with hybrid architecture (use bf16 LoRA instead).
 
 Source: https://qwen-ai.com/qwen-3-5 (fetched 2025-06-15, 38KB).
+
+---
+
+## How to Use
+
+### Quick smoke test (standalone Python, no GPU needed)
+
+```bash
+cd aicb
+python3 workload_generator/mocked_model/training/MockedQwen3.py
+python3 workload_generator/mocked_model/training/MockedQwen3_5.py
+```
+
+### Generate workload CSVs programmatically
+
+```python
+from workload_generator.mocked_model.training.MockedQwen3 import Qwen3Params, Qwen3Model
+
+# Qwen3-8B dense
+cfg = Qwen3Params()
+cfg.hidden_size = 4096
+cfg.intermediate_size = 12288
+cfg.num_hidden_layers = 36
+cfg.num_attention_heads = 32
+cfg.num_key_value_heads = 8
+cfg.head_dim = 128
+cfg.vocab_size = 151936
+cfg.tensor_model_parallel_size = 8
+cfg.world_size = 8
+cfg.seq_length = 4096
+cfg.micro_batch = 2
+cfg.enable_sequence_parallel = True
+
+model = Qwen3Model(cfg)
+fwd = model.forward()   # 146 ops
+bwd = model.backward()  # 219 ops
+fwd.dump("qwen3_8b_fwd")  # -> results/mocked_workload/qwen3_8b_fwd_workload.csv
+```
+
+### Qwen3.5-9B dense
+
+```python
+from workload_generator.mocked_model.training.MockedQwen3_5 import Qwen3_5Params, Qwen3_5Model
+
+cfg = Qwen3_5Params()
+cfg.hidden_size = 4096; cfg.intermediate_size = 12288
+cfg.num_hidden_layers = 32; cfg.num_attention_heads = 16
+cfg.num_key_value_heads = 4; cfg.head_dim = 256
+cfg.vocab_size = 248320
+cfg.full_attention_interval = 4
+cfg.linear_key_head_dim = 128; cfg.linear_value_head_dim = 128
+cfg.linear_num_key_heads = 16; cfg.linear_num_value_heads = 32
+cfg.linear_conv_kernel_dim = 4
+cfg.tensor_model_parallel_size = 8; cfg.world_size = 8
+cfg.seq_length = 4096; cfg.micro_batch = 2
+cfg.enable_sequence_parallel = True
+
+model = Qwen3_5Model(cfg)
+fwd = model.forward()   # 82 ops
+bwd = model.backward()  # 123 ops
+```
+
+### Qwen3.5-397B-A17B MoE
+
+```python
+cfg = Qwen3_5Params()
+cfg.hidden_size = 4096; cfg.intermediate_size = 12288
+cfg.moe_intermediate_size = 1024; cfg.shared_expert_intermediate_size = 1024
+cfg.num_hidden_layers = 60; cfg.num_attention_heads = 32
+cfg.num_key_value_heads = 2; cfg.head_dim = 256
+cfg.vocab_size = 248320
+cfg.full_attention_interval = 4
+cfg.linear_key_head_dim = 128; cfg.linear_value_head_dim = 128
+cfg.linear_num_key_heads = 16; cfg.linear_num_value_heads = 64
+cfg.linear_conv_kernel_dim = 4
+cfg.tensor_model_parallel_size = 4; cfg.expert_model_parallel_size = 16
+cfg.world_size = 128
+cfg.seq_length = 4096; cfg.micro_batch = 2
+cfg.enable_sequence_parallel = True
+cfg.moe_enable = True; cfg.num_experts = 512; cfg.moe_router_topk = 10
+
+model = Qwen3_5Model(cfg)
+fwd = model.forward()   # 452 ops
+bwd = model.backward()  # 468 ops
+```
+
+### CLI (requires --frame, --swiglu, --head_dim, --num_key_value_heads)
+
+```bash
+python -m workload_generator.generate_megatron_workload \
+  --frame Qwen3 --model_name Qwen3-8B \
+  --hidden_size 4096 --num_layers 36 \
+  --num_attention_heads 32 --num_key_value_heads 8 --head_dim 128 \
+  --intermediate_size 12288 --vocab_size 151936 \
+  --world_size 8 --tensor_model_parallel_size 8 \
+  --seq_length 4096 --micro_batch 2 \
+  --enable_sequence_parallel --swiglu --workload_only
+```
