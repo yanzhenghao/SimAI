@@ -477,3 +477,53 @@ python -m workload_generator.generate_megatron_workload \
   --seq_length 4096 --micro_batch 2 \
   --enable_sequence_parallel --swiglu --workload_only
 ```
+
+---
+
+## Source Audit (complete, 2025-06-15)
+
+### External HTTP (24 succeeded, 4 blocked)
+
+**Config.json (17 models):**
+- hf-mirror.com: Qwen3-0.6B, 1.7B, 4B, 8B, 14B, 32B, 30B-A3B
+- hf-mirror.com: Qwen3.5-0.8B, 2B, 4B, 9B, 27B, 35B-A3B, 122B-A10B, 397B-A17B
+- hf-mirror.com: Qwen3.5-2B (initial fetch)
+- modelscope.cn: Qwen3-235B-A22B (gated on HF, available via ModelScope API)
+
+**Architecture papers / docs:**
+- ar5iv.labs.arxiv.org/html/2505.09388 -- Qwen3 Technical Report (140KB HTML)
+- arxiv.org/abs/2505.09388 -- Qwen3 paper abstract (55KB HTML)
+- qwen-ai.com/qwen-3-5 -- Qwen3.5 official blog (38KB, March 2026)
+- docs.nvidia.com/nemo/megatron-bridge/0.4.0/models/vlm/qwen35-vl.html -- NVIDIA Megatron-Bridge Qwen3.5 config
+
+**HF Transformers source code (4 files via ghproxy.net):**
+- modeling_qwen3.py (528 lines)
+- modeling_qwen3_5.py (~2100 lines)
+- modeling_llama.py (~530 lines)
+- modular_qwen3.py (~80 lines)
+
+**Blocked (Fastly CDN 151.101.x.x timeout):**
+- huggingface.co, qwenlm.github.io, github.com, raw.githubusercontent.com,
+  arxiv.org PDF, sciencestack.ai, deepwiki.com, aihub.caict.ac.cn
+
+### Local files read (18)
+
+MockedMegatron.py, MockedQwen3.py, MockedQwen3_5.py, MockedDeepSeek.py,
+AiobMegatron.py, SimAI_training_workload_generator.py, generate_megatron_workload.py,
+workload_generator.py, utils/utils.py, MockedModel.py, CLAUDE.md,
+gpu_compute_timing.txt, workload_analytical.txt, workload_gpt13b_128g.txt,
+busbw.yaml, test_mocked_qwen3.py, test_mocked_qwen3_5.py, log_analyzer/log.py
+
+### Files created (4)
+
+RESEARCH.md (450 lines), test_regression_bugs.py (325 lines),
+AiobQwen3.py (338 lines), AiobQwen3_5.py (409 lines).
+
+### Test suite
+
+138 tests passing (run from `aicb/` directory):
+  - test_regression_bugs.py: 10 tests (MOEMLP backward, DeepSeekMoE backward,
+    GatedDeltaNet empty, SwiGLU compat, CLI aliases)
+  - test_mocked_qwen3.py: 58 tests (dense + MoE comm counts, QK-Norm, tie embedding)
+  - test_mocked_qwen3_5.py: 55 tests (dense comm counts, SimAI generator format)
+  - test_logitem_ranks.py, test_rank_mapper.py: 15 tests (pre-existing)
