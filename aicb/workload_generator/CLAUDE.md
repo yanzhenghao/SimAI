@@ -12,6 +12,14 @@
 > - Model configs: hf-mirror.com (16 models), modelscope.cn (1 gated model)
 > - HF Transformers source: ghproxy.net (modeling_qwen3.py, modeling_qwen3_5.py,
 >   modeling_llama.py, modular_qwen3.py)
+> - NVIDIA Megatron-Bridge Qwen3 recipe: docs.nvidia.com (TP=4/PP=16/EP=8/CP=2)
+> - AICB submodule branch: yanzhenghao/SimAI:aicb-pr (contains the actual code;
+>   the parent repo SimAI PR #289 bumps the submodule pointer)
+
+> **Repository structure**: `aicb/` is a git submodule inside the SimAI
+> monorepo. Changes in `aicb/` are committed to the submodule's own history
+> and the parent repo only tracks a pointer commit. PRs to the parent repo
+> must include a submodule pointer bump (`git add aicb`).
 
 ## Architecture
 
