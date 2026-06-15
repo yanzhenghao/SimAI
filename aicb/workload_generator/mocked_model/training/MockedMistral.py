@@ -1,7 +1,7 @@
 """
 Mocked Mistral / Mixtral model for AICB workload generation.
 
-Mistral-7B (dense): Same architecture as LLaMA (RMSNorm, SwiGLU, GQA, RoPE)
+Mistral-7B (dense): Same architecture as Llama (RMSNorm, SwiGLU, GQA, RoPE)
   with sliding window attention (window_size=4096 typically).
   Reuses LlamaAttention, LlamaRMSNorm, LlamaRotaryEmbedding, LlamaMLP.
 
@@ -40,7 +40,7 @@ from log_analyzer.log import Workload, LogItem
 # MistralDecoderLayer -- standard dense decoder layer
 # ---------------------------------------------------------------------------
 class MistralDecoderLayer(MockedModel):
-    """Mistral decoder layer: identical to LLaMA architecture.
+    """Mistral decoder layer: identical to Llama architecture.
 
     Structure (pre-norm):
       x -> RMSNorm -> GQA Attention (sliding window) -> residual(+x)
@@ -188,7 +188,7 @@ class MixtralDecoderLayer(MockedModel):
 class MistralModel(MockedModel):
     """Mistral dense model: Embedding -> N x MistralDecoderLayer -> FinalNorm -> LM Head.
 
-    Identical architecture to LLaMA with sliding window attention.
+    Identical architecture to Llama with sliding window attention.
     """
 
     def __init__(self, config):

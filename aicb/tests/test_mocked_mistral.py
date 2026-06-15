@@ -1,10 +1,10 @@
 """
 Tests for MockedMistral.py: Mistral (dense) and Mixtral (MoE) architectures.
 
-Key differences from LLaMA:
+Key differences from Llama:
   - Mistral: sliding window attention (compute-only, no comm impact)
   - Mixtral: MoE FFN with 8 experts, top-2 routing, all_to_all EP dispatch
-  - Mistral uses rope_theta=1e6 (vs LLaMA's 1e4 default)
+  - Mistral uses rope_theta=1e6 (vs Llama's 1e4 default)
 """
 
 import sys

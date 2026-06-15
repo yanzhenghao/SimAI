@@ -3,7 +3,7 @@ Mocked Gemma model for AICB workload generation.
 
 Gemma (Google, 2024-2025): Decoder-only architecture with GeGLU activation.
 
-Key differences from LLaMA:
+Key differences from Llama:
   - GeGLU activation (GELU on gate_proj) instead of SwiGLU (SiLU on gate_proj)
   - Standard MHA (Gemma 2B/7B) or GQA (Gemma 3)
   - RMSNorm pre-normalization
@@ -41,7 +41,7 @@ from log_analyzer.log import Workload, LogItem
 
 
 class GemmaDecoderLayer(MockedModel):
-    """Gemma decoder layer: identical to LLaMA in communication structure.
+    """Gemma decoder layer: identical to Llama in communication structure.
 
     GeGLU (GELU on gate_proj) is compute-only. Communication patterns
     are modeled identically via LlamaMLP (SwiGLU) since TP sharding
