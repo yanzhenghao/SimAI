@@ -19,6 +19,10 @@ from workload_generator.mocked_model.training.MockedQwen3 import (
     Qwen3Model, Qwen3Attention, Qwen3Mlp, Qwen3Embedding, Qwen3RMSNorm,
 )
 from workload_generator.mocked_model.training.MockedQwen3_5 import Qwen3_5Model
+from workload_generator.mocked_model.training.MockedQwen3_5 import (
+    Qwen3_5RowLinear, Qwen3_5ColumnLinear, Qwen3_5RMSNorm,
+    Qwen3_5Embedding, Qwen3_5FullAttention, Qwen3_5Mlp,
+)
 from workload_generator.mocked_model.MockedModel import MockedParam, MockedModel
 from utils.utils import CommType, get_params, get_comp_out, extract_averages
 import os
@@ -122,6 +126,10 @@ class SIMAI_workload:
                     or isinstance(model, DeepSeekLinear)
                     or isinstance(model, Qwen3Embedding)
                     or isinstance(model, Qwen3RMSNorm)
+                    or isinstance(model, Qwen3_5RowLinear)
+                    or isinstance(model, Qwen3_5ColumnLinear)
+                    or isinstance(model, Qwen3_5Embedding)
+                    or isinstance(model, Qwen3_5RMSNorm)
                 ):
                     params = model.parameters()
                     param_count = sum(p.numel() for p in params)
@@ -141,6 +149,9 @@ class SIMAI_workload:
                     or isinstance(model, Qwen3Attention)
                     or isinstance(model, Qwen3Mlp)
                     or isinstance(model, Qwen3Embedding)
+                    or isinstance(model, Qwen3_5FullAttention)
+                    or isinstance(model, Qwen3_5Mlp)
+                    or isinstance(model, Qwen3_5Embedding)
                 ):
                     params = model.parameters()
                     param_count = sum(p.numel() for p in params)
