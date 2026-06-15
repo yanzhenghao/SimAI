@@ -236,6 +236,7 @@ class LlamaAttention(MockedModel):
         num_kv_heads,
         hidden_size,
         tp,
+        cp,
         seq_len,
         batch_size,
         layer_id,
@@ -251,8 +252,12 @@ class LlamaAttention(MockedModel):
         self.head_dim = hidden_size // num_attention_heads
         self.hidden_size = hidden_size
         self.tp = tp
+        self.cp = cp
         self.seq_len = seq_len
         self.batch_size = batch_size
+
+        # Context Parallelism: per-rank sequence length is seq_len / cp
+        self.seq_len_per_cp = seq_len // cp if cp > 0 else seq_len
 
         # TP degree for K/V: capped at num_kv_heads (heads cannot be split
         # beyond their count; extra GPUs replicate K/V at no comm cost)
@@ -327,6 +332,27 @@ class LlamaAttention(MockedModel):
         workloads.extend(self.q_proj.forward())
         workloads.extend(self.k_proj.forward())
         workloads.extend(self.v_proj.forward())
+
+        # Context Parallelism: exchange K/V across CP ranks via all_to_all.
+        # After Q/K/V projection, each rank has only seq_len/cp tokens' worth
+        # of K and V. To compute full attention, ranks exchange their local
+        # K and V with all other CP ranks.
+        if self.cp > 1:
+            # Total K+V data per rank being redistributed (in bytes, BF16=2)
+            cp_kv_size = (
+                2 * self.num_kv_heads * self.head_dim
+                * self.seq_len * self.batch_size
+            )
+            workloads.append(
+                LogItem(
+                    comm_type=CommType.all_to_all,
+                    comm_group=CommGroup.cp_group,
+                    comm_group_size=self.cp,
+                    msg_size=cp_kv_size,
+                    stage=f"forward.cp_kv_exchange.{self.name}",
+                )
+            )
+
         workloads.extend(self.o_proj.forward())
         assert all(isinstance(w, LogItem) for w in workloads.workload)
         return workloads
@@ -334,6 +360,23 @@ class LlamaAttention(MockedModel):
     def backward(self):
         workloads = Workload()
         workloads.extend(self.o_proj.backward())
+
+        # CP backward: gradient of K/V must be all_to_all back
+        if self.cp > 1:
+            cp_kv_size = (
+                2 * self.num_kv_heads * self.head_dim
+                * self.seq_len * self.batch_size
+            )
+            workloads.append(
+                LogItem(
+                    comm_type=CommType.all_to_all,
+                    comm_group=CommGroup.cp_group,
+                    comm_group_size=self.cp,
+                    msg_size=cp_kv_size,
+                    stage=f"backward.cp_kv_exchange.{self.name}",
+                )
+            )
+
         workloads.extend(self.v_proj.backward())
         workloads.extend(self.k_proj.backward())
         workloads.extend(self.q_proj.backward())
@@ -362,6 +405,7 @@ class LlamaDecoderLayer(MockedModel):
         num_attention_heads,
         num_kv_heads,
         tp,
+        cp,
         seq_len,
         batch_size,
         layer_id,
@@ -379,12 +423,13 @@ class LlamaDecoderLayer(MockedModel):
             hidden_size, name=f"input_norm_{layer_id}"
         )
 
-        # Group Query Attention
+        # Group Query Attention (with Context Parallelism support)
         self.self_attn = LlamaAttention(
             num_attention_heads,
             num_kv_heads,
             hidden_size,
             tp,
+            cp,
             seq_len,
             batch_size,
             layer_id,
@@ -462,6 +507,11 @@ class LlamaModel(MockedModel):
         if num_kv_heads is None:
             num_kv_heads = config.num_attention_heads
 
+        # Context parallelism degree (default 1 = no CP)
+        cp = getattr(config, "context_parallel_size", 1)
+        if cp is None:
+            cp = 1
+
         # Embedding layer (reuses Megatron embedding with TP support)
         self.embedding = MegatronEmbedding(
             config.padded_vocab_size,
@@ -488,6 +538,7 @@ class LlamaModel(MockedModel):
                 config.num_attention_heads,
                 num_kv_heads,
                 config.tensor_model_parallel_size,
+                cp,
                 config.seq_length,
                 config.micro_batch,
                 i,

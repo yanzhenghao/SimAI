@@ -155,21 +155,21 @@ class TestLlamaMLP:
 class TestLlamaAttention:
     def test_mha_fallback_when_kv_heads_equal(self):
         """When num_kv_heads == num_heads, GQA degrades to standard MHA."""
-        attn = LlamaAttention(32, 32, 4096, tp=1, seq_len=2048, batch_size=1, layer_id=0)
+        attn = LlamaAttention(32, 32, 4096, tp=1, cp=1, seq_len=2048, batch_size=1, layer_id=0)
         assert attn.kv_tp == 1  # tp=1
         assert attn.head_dim == 128
 
     def test_gqa_kv_tp_capped(self):
         """When num_kv_heads < tp, kv_tp is capped at num_kv_heads."""
-        attn = LlamaAttention(32, 8, 4096, tp=4, seq_len=2048, batch_size=1, layer_id=0)
+        attn = LlamaAttention(32, 8, 4096, tp=4, cp=1, seq_len=2048, batch_size=1, layer_id=0)
         assert attn.kv_tp == 4  # min(8, 4) = 4
 
-        attn2 = LlamaAttention(32, 2, 4096, tp=4, seq_len=2048, batch_size=1, layer_id=0)
+        attn2 = LlamaAttention(32, 2, 4096, tp=4, cp=1, seq_len=2048, batch_size=1, layer_id=0)
         assert attn2.kv_tp == 2  # min(2, 4) = 2, K/V replicated on 2 extra GPUs
 
     def test_kv_projection_smaller_than_q(self):
         """K and V projections have fewer outputs than Q in GQA mode."""
-        attn = LlamaAttention(32, 8, 4096, tp=1, seq_len=2048, batch_size=1, layer_id=0)
+        attn = LlamaAttention(32, 8, 4096, tp=1, cp=1, seq_len=2048, batch_size=1, layer_id=0)
         q_params = sum(p.numel() for p in attn.q_proj.parameters())
         k_params = sum(p.numel() for p in attn.k_proj.parameters())
         v_params = sum(p.numel() for p in attn.v_proj.parameters())
@@ -180,9 +180,9 @@ class TestLlamaAttention:
     def test_gqa_reduces_kv_comm_size(self):
         """GQA reduces K/V comm by factor num_kv_heads / num_attention_heads."""
         # MHA (baseline): 32 heads
-        attn_mha = LlamaAttention(32, 32, 4096, tp=4, seq_len=2048, batch_size=1, layer_id=0)
+        attn_mha = LlamaAttention(32, 32, 4096, tp=4, cp=1, seq_len=2048, batch_size=1, layer_id=0)
         # GQA: 8 KV heads (4x reduction)
-        attn_gqa = LlamaAttention(32, 8, 4096, tp=4, seq_len=2048, batch_size=1, layer_id=0)
+        attn_gqa = LlamaAttention(32, 8, 4096, tp=4, cp=1, seq_len=2048, batch_size=1, layer_id=0)
 
         mha_k_params = sum(p.numel() for p in attn_mha.k_proj.parameters())
         gqa_k_params = sum(p.numel() for p in attn_gqa.k_proj.parameters())
@@ -190,17 +190,17 @@ class TestLlamaAttention:
         assert gqa_k_params * 4 == mha_k_params
 
     def test_forward_produces_workload(self):
-        attn = LlamaAttention(32, 8, 4096, tp=4, seq_len=2048, batch_size=1, layer_id=0)
+        attn = LlamaAttention(32, 8, 4096, tp=4, cp=1, seq_len=2048, batch_size=1, layer_id=0)
         wl = attn.forward()
         assert len(wl.workload) >= 4  # Q, K, V, O (each may have compute+comm)
 
     def test_backward_produces_workload(self):
-        attn = LlamaAttention(32, 8, 4096, tp=4, seq_len=2048, batch_size=1, layer_id=0)
+        attn = LlamaAttention(32, 8, 4096, tp=4, cp=1, seq_len=2048, batch_size=1, layer_id=0)
         wl = attn.backward()
         assert len(wl.workload) >= 4
 
     def test_activation_memory(self):
-        attn = LlamaAttention(32, 32, 4096, tp=1, seq_len=2048, batch_size=2, layer_id=0)
+        attn = LlamaAttention(32, 32, 4096, tp=1, cp=1, seq_len=2048, batch_size=2, layer_id=0)
         assert attn.activation_memory() == 2048 * 2 * 4096
 
 
@@ -209,7 +209,7 @@ class TestLlamaAttention:
 # ---------------------------------------------------------------------------
 class TestLlamaDecoderLayer:
     def test_has_pre_norm_structure(self):
-        layer = LlamaDecoderLayer(4096, 11008, 32, 8, tp=1, seq_len=2048,
+        layer = LlamaDecoderLayer(4096, 11008, 32, 8, tp=1, cp=1, seq_len=2048,
                                   batch_size=1, layer_id=0)
         assert isinstance(layer.input_layernorm, LlamaRMSNorm)
         assert isinstance(layer.post_attention_layernorm, LlamaRMSNorm)
@@ -218,7 +218,7 @@ class TestLlamaDecoderLayer:
 
     def test_forward_backward(self):
         """With TP>1, the layer generates communication LogItems."""
-        layer = LlamaDecoderLayer(4096, 11008, 32, 8, tp=4, seq_len=2048,
+        layer = LlamaDecoderLayer(4096, 11008, 32, 8, tp=4, cp=1, seq_len=2048,
                                   batch_size=1, layer_id=0)
         fwd = layer.forward()
         bwd = layer.backward()
@@ -228,7 +228,7 @@ class TestLlamaDecoderLayer:
 
     def test_forward_backward_tp1_no_comms(self):
         """TP=1 + no computation means no communication LogItems (expected)."""
-        layer = LlamaDecoderLayer(4096, 11008, 32, 8, tp=1, seq_len=2048,
+        layer = LlamaDecoderLayer(4096, 11008, 32, 8, tp=1, cp=1, seq_len=2048,
                                   batch_size=1, layer_id=0)
         fwd = layer.forward()
         bwd = layer.backward()
@@ -237,7 +237,7 @@ class TestLlamaDecoderLayer:
         assert isinstance(bwd.workload, list)
 
     def test_activation_memory_is_positive(self):
-        layer = LlamaDecoderLayer(4096, 11008, 32, 8, tp=1, seq_len=2048,
+        layer = LlamaDecoderLayer(4096, 11008, 32, 8, tp=1, cp=1, seq_len=2048,
                                   batch_size=1, layer_id=0)
         assert layer.activation_memory() > 0
 

@@ -580,6 +580,8 @@ class CommGroup(str, Enum):
     ep_tp_group = "ep_tp_group"
     embedding_group = "embedding_group"
     cp_group = "cp_group"
+    cp_dp_group = "cp_dp_group"
+    cp_tp_group = "cp_tp_group"
     all = "all_nodes"
 
 
@@ -711,6 +713,43 @@ def get_params():
             f"num_attention_heads ({args.num_attention_heads}) must be divisible "
             f"by tensor_model_parallel_size ({args.tensor_model_parallel_size})."
         )
+
+    # Context Parallelism validation
+    cp_size = getattr(args, "context_parallel_size", 1)
+    if cp_size is None:
+        cp_size = 1
+        args.context_parallel_size = 1
+    if cp_size < 1:
+        raise ValueError(
+            f"context_parallel_size ({cp_size}) must be >= 1."
+        )
+    if cp_size > 1:
+        if args.seq_length % cp_size != 0:
+            raise ValueError(
+                f"seq_length ({args.seq_length}) must be divisible by "
+                f"context_parallel_size ({cp_size})."
+            )
+        # world_size check: tp * pp * dp * cp = world_size was already validated
+        # above, but we also want to ensure cp_size is accounted for in dp_num.
+        # Recompute dp_num to remove cp from the data-parallel dimension:
+        effective_dp = args.world_size // (
+            args.tensor_model_parallel_size
+            * args.pipeline_model_parallel
+            * cp_size
+        )
+        if args.world_size % (
+            args.tensor_model_parallel_size
+            * args.pipeline_model_parallel
+            * cp_size
+        ) != 0:
+            raise ValueError(
+                f"world_size ({args.world_size}) must be divisible by "
+                f"tp*pp*cp = {args.tensor_model_parallel_size * args.pipeline_model_parallel * cp_size}."
+            )
+        # Update dp_num and num_microbatches to reflect CP:
+        # dp = world_size / (tp * pp * cp)
+        args.dp_num = effective_dp
+        args.num_microbatches = args.global_batch // (args.dp_num * args.micro_batch)
 
     args.padded_vocab_size = get_padded_vocab_size(args)
     if args.ffn_hidden_size is None:
@@ -848,6 +887,14 @@ def get_collective_test_params(parser: argparse.ArgumentParser):
 
 def get_simAI_workload_params(parser: argparse.ArgumentParser):
     parser.add_argument("--overlap_version", action="store_true")
+    parser.add_argument(
+        "--export-chakra",
+        type=str,
+        default=None,
+        metavar="FILEPATH",
+        help="Export the generated workload as a Chakra Execution Trace JSON file "
+        "(compatible with ASTRA-sim, PARAM, and other Chakra-ecosystem tools).",
+    )
 
 def get_moe_params(parser: argparse.ArgumentParser):
     parser.add_argument('--moe_enable', action="store_true")

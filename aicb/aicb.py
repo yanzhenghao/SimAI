@@ -61,6 +61,15 @@ if __name__ == "__main__":
     if torch.distributed.get_rank() == 0:
         filename = f"{workload_generator.name}_{args.model_name}_sp_{args.enable_sequence_parallel}_iteration_{args.epoch_num}_computationEnable_{args.computation_enable}_{args.world_size}n.csv"
         workload.dump(filename)
+
+        # Chakra ET export (optional, rank-0 only)
+        chakra_path = getattr(args, "export_chakra", None)
+        if chakra_path:
+            from utils.chakra_export import ChakraExporter
+            exporter = ChakraExporter(workload, args)
+            exporter.export(chakra_path)
+            print(f"[Chakra] Exported {exporter.node_count} nodes to {chakra_path}")
+
     if not args.workload_only :
         applyer = WorkloadApplyer(workload=workload, args=args)
         cpu_time = applyer.apply_workload()

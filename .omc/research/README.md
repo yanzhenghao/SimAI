@@ -4,7 +4,7 @@
 
 ### AICB Model Extensibility -- 功能设计说明书
 
-**File:** `aicb-model-extensibility.md` (1,190 lines, 25 sources)
+**File:** `aicb-model-extensibility.md` (1,193 lines, 28 sources)
 **Type:** 功能设计说明书 + 竞争调研报告
 **Date:** 2026-06-15
 

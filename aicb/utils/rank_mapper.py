@@ -19,6 +19,9 @@ _COMM_GROUP_TOKEN_MAP = {
     CommGroup.ep_dp_group:   ("ep-dp",  True),
     CommGroup.ep_tp_group:   ("ep-tp",  True),
     CommGroup.embedding_group: ("tp",   False),
+    CommGroup.cp_group:      ("cp",     False),
+    CommGroup.cp_dp_group:   ("cp-dp",  False),
+    CommGroup.cp_tp_group:   ("cp-tp",  False),
 }
 
 

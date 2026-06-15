@@ -272,6 +272,7 @@ class MegatronAttention(MockedModel):
         num_attention_heads,
         hidden_size,
         tp,
+        cp,
         seq_len,
         batch_size,
         layer_id,
@@ -281,6 +282,7 @@ class MegatronAttention(MockedModel):
     ):
         self.name = "attention_layer"
         self.layer_id = layer_id
+        self.cp = cp
         self.kv_channels = hidden_size // num_attention_heads
         self.kv_projection_size = self.kv_channels * num_attention_heads
         self.query_projection_size = self.kv_channels * num_attention_heads
@@ -314,14 +316,46 @@ class MegatronAttention(MockedModel):
     def forward(self):
         workloads = Workload()
         workloads.extend(self.qkv.forward())
+
+        # Context Parallelism: exchange K/V across CP ranks via all_to_all.
+        if self.cp > 1:
+            cp_kv_size = (
+                2 * self.kv_projection_size * self.qkv.seq_len * self.qkv.batch_size
+            )
+            workloads.append(
+                LogItem(
+                    comm_type=CommType.all_to_all,
+                    comm_group=CommGroup.cp_group,
+                    comm_group_size=self.cp,
+                    msg_size=cp_kv_size,
+                    stage="forward.cp_kv_exchange.attention_layer",
+                )
+            )
+
         workloads.extend(self.attention_dense.forward())
         assert all([isinstance(workload, LogItem) for workload in workloads.workload])
         return workloads
 
     def backward(self):
         workloads = Workload()
-        workloads.extend(self.qkv.backward())
         workloads.extend(self.attention_dense.backward())
+
+        # CP backward: gradient of K/V must be all_to_all back
+        if self.cp > 1:
+            cp_kv_size = (
+                2 * self.kv_projection_size * self.qkv.seq_len * self.qkv.batch_size
+            )
+            workloads.append(
+                LogItem(
+                    comm_type=CommType.all_to_all,
+                    comm_group=CommGroup.cp_group,
+                    comm_group_size=self.cp,
+                    msg_size=cp_kv_size,
+                    stage="backward.cp_kv_exchange.attention_layer",
+                )
+            )
+
+        workloads.extend(self.qkv.backward())
         assert all([isinstance(workload, LogItem) for workload in workloads.workload])
         return workloads
 
@@ -580,6 +614,7 @@ class MegatronTransformorLayer(MockedModel):
         hidden_size,
         ffn_hidden_size,
         tp,
+        cp,
         seq_len,
         batch_size,
         num_attention_heads,
@@ -598,6 +633,7 @@ class MegatronTransformorLayer(MockedModel):
             num_attention_heads,
             hidden_size,
             tp,
+            cp,
             seq_len,
             batch_size,
             layer_id,
@@ -700,11 +736,13 @@ class MegatronModel(MockedModel):
             config.micro_batch,
         )
         num_shared_experts = getattr(config, "n_shared_expert", 0)
+        cp = getattr(config, "context_parallel_size", 1) or 1
         self.layers = [
             MegatronTransformorLayer(
                 config.hidden_size,
                 config.ffn_hidden_size,
                 config.tensor_model_parallel_size,
+                cp,
                 config.seq_length,
                 config.micro_batch,
                 config.num_attention_heads,
