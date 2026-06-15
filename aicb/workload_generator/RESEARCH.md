@@ -89,18 +89,21 @@ mrope_interleaved=true, mtp_num_hidden_layers=1. Linear V heads scale: 16 (0.8B,
 
 ### 2.4 Qwen3.5 MoE (3 variants, MockedQwen3_5.py, moe_enable=True)
 
-| Model | h | L | Q | KV | exp | topk | moe_ffn | shared_ffn | full:lin |
-|-------|---|---|----|-----|-----|------|---------|------------|----------|
-| 35B-A3B | 2048 | 40 | 16 | 2 | 256 | 8 | 512 | 512 | 10:30 |
-| 122B-A10B | 3072 | 48 | 32 | 2 | 256 | 8 | 1024 | 1024 | 12:36 |
-| 397B-A17B | 4096 | 60 | 32 | 2 | 512 | 10 | 1024 | 1024 | 15:45 |
+| Model | h | L | Q | KV | hdim | exp | topk | moe_ffn | shared_ffn | lin_V | full:lin | vocab |
+|-------|---|---|----|-----|------|-----|------|---------|------------|-------|----------|-------|
+| 35B-A3B | 2048 | 40 | 16 | 2 | 256 | 256 | 8 | 512 | 512 | 32 | 10:30 | 248320 |
+| 122B-A10B | 3072 | 48 | 32 | 2 | 256 | 256 | 8 | 1024 | 1024 | 64 | 12:36 | 248320 |
+| 397B-A17B | 4096 | 60 | 32 | 2 | 256 | 512 | 10 | 1024 | 1024 | 64 | 15:45 | 248320 |
 
-Common: head_dim=256, rope_theta=10M, full_attn_interval=4, linear_num_key_heads=16,
-linear_conv_kernel_dim=4, vocab=248320, model_type=qwen3_5_moe. Linear V heads:
-32 (35B), 64 (122B), 64 (397B).
+Common: rope_theta=10M, full_attn_interval=4, linear_num_key_heads=16,
+linear_conv_kernel_dim=4, partial_rotary=0.25, attn_output_gate=true,
+mrope_interleaved=true, mtp_num_hidden_layers=1, model_type=qwen3_5_moe.
+Shared expert: 1 per layer, sigmoid-gated, operates on ALL tokens (not routed).
+FP8 native (blog: ~50% activation memory reduction). 262K native context, 1M via YaRN.
 
-Verified: shared expert actively used. HF source line 800-812: created, called on
-ALL tokens, sigmoid-gated, added to routed expert output.
+Note: The A17B suffix in 397B-A17B refers to ~17B activated parameters per token
+(10 routed experts + 1 shared expert, each with moe_ffn=1024), not 17 experts.
+The Qwen3.5 blog incorrectly states "17 active" -- config.json confirms topk=10.
 
 ---
 
