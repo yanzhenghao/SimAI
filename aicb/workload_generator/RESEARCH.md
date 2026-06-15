@@ -244,3 +244,30 @@ per-layer communication, with Qwen3.5 adding shared expert TP overhead.
 4. GatedDeltaNet parameter count approximate (linear weights only).
 5. Qwen3Params training orchestration fields (pp_rank, use_distributed_optimizer)
    set by CLI get_params(), not by Params defaults.
+
+---
+
+## Qwen3.5 Official Blog (qwen-ai.com/qwen-3-5, March 2026)
+
+The Qwen3.5 launch blog confirms several architectural findings and adds
+performance context:
+
+- **Hybrid ratio**: 75% GatedDeltaNet + 25% gated attention (3:1), matching
+  config.json `full_attention_interval=4` and `layer_types` pattern.
+- **Performance**: 8.6x faster decode at 32K tokens, 19x at 256K vs Qwen3-Max.
+  Community: 35B-A3B hits 196 tok/s on RTX 4090.
+- **Vocab**: 248,320 tokens (up from 152K in Qwen3), 201 languages.
+- **FP8 native**: ~50% activation memory reduction.
+- **All models multimodal**: Text, image, video via early fusion. No separate
+  "VL" suffix -- every model handles all modalities.
+- **Context**: 262K native, 1M via YaRN.
+- **MoE 397B**: 512 total experts, 10 active + 1 shared (confirmed by config.json
+  `num_experts_per_tok=10`). Blog says "17 active" -- this conflates the activated
+  parameter count (~17B, hence the A17B suffix) with the number of routed experts.
+- **Thinking control**: API parameter `enable_thinking` (not chat template
+  toggles like Qwen3). On by default for 27B+, off for smaller.
+- **Deployment caveats**: Ollama broken as of March 2026 (infinite CoT loops,
+  broken tool calling, 5-7x slower than llama.cpp). QLoRA 4-bit incompatible
+  with hybrid architecture (use bf16 LoRA instead).
+
+Source: https://qwen-ai.com/qwen-3-5 (fetched 2025-06-15, 38KB).
