@@ -29,6 +29,7 @@ from workload_generator.mocked_model.training.MockedLlama import LlamaModel
 from workload_generator.mocked_model.training.MockedFalconH1 import FalconH1Model
 from workload_generator.mocked_model.training.MockedMistral import MistralModel, MixtralModel
 from workload_generator.mocked_model.training.MockedGemma import GemmaModel
+from workload_generator.mocked_model.training.MockedDBRX import DBRXModel
 
 # ---------------------------------------------------------------------------
 # Workload generators
@@ -124,6 +125,13 @@ register_model(
     GemmaModel,
     MegatronWorkload,
     "Gemma 2B/7B/12B training workload (GeGLU + MHA/GQA + RMSNorm)",
+)
+
+register_model(
+    "DBRX",
+    DBRXModel,
+    MegatronWorkload,
+    "DBRX-132B training workload (16 experts, top-4, fine-grained MoE)",
 )
 
 register_model(

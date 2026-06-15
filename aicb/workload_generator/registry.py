@@ -117,3 +117,15 @@ def is_registered(name: str) -> bool:
 def clear_registry() -> None:
     """Clear all entries from the registry. Intended for testing only."""
     model_registry.clear()
+
+
+def list_frames() -> str:
+    """Return a formatted string listing all registered model frameworks."""
+    if not model_registry:
+        return "(none registered)"
+    lines = []
+    for name in sorted(model_registry.keys()):
+        entry = model_registry[name]
+        has_model = "model" if entry.model_cls is not None else "no-model"
+        lines.append(f"  {name:<18} {has_model:<10} {entry.description}")
+    return "\n".join(lines)

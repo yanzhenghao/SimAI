@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"git push anthony master 2>&1\",\"timeout\":15000,\"description\":\"push anthony\"}",
+  "tool_input_preview": "{\"command\":\"git push anthony master 2>&1\",\"timeout\":10000,\"description\":\"push anthony\"}",
   "error": "Exit code 128\nERROR: Permission to zhenghaoyan-anthony/SimAI.git denied to yanzhenghao.\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.",
-  "timestamp": "2026-06-15T08:13:19.874Z",
-  "retry_count": 2
+  "timestamp": "2026-06-15T08:17:57.348Z",
+  "retry_count": 7
 }
