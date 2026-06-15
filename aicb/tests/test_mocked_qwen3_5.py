@@ -198,8 +198,8 @@ class TestQwen35Dense:
         assert rs > 0, f"{name}: no reduce_scatter items"
 
     @pytest.mark.parametrize("name,h,ff,L,n_heads,n_kv,hd,tie,lkd,lvd", QWEN35_DENSE)
-    def test_comm_counts_scale_with_layers(self, name, h, ff, L, n_heads, n_kv, hd, tie, lkd, lvd):
-        """AG and RS counts scale with layer count and are positive."""
+    def test_per_layer_comm_count_formula(self, name, h, ff, L, n_heads, n_kv, hd, tie, lkd, lvd):
+        """Exact per-layer formula: GDN=3AG+2RS, Full=6AG+4RS (3:1 ratio)."""
         from workload_generator.mocked_model.training.MockedQwen3_5 import (
             Qwen3_5Params, Qwen3_5Model,
         )
@@ -212,9 +212,16 @@ class TestQwen35Dense:
 
         ag = sum(1 for w in wl.workload if str(w.comm_type) == "CommType.all_gather")
         rs = sum(1 for w in wl.workload if str(w.comm_type) == "CommType.reduce_scatter")
-        assert ag > L * 3, f"{name}: AG too low: {ag} for {L} layers"
-        assert rs > L * 2, f"{name}: RS too low: {rs} for {L} layers"
-        assert ag > rs, f"{name}: AG ({ag}) should exceed RS ({rs})"
+
+        full_layers = L // 4
+        # GatedDeltaNet: 3 AG + 2 RS (MLP only, GDN returns empty Workload)
+        # Full attention: 6 AG + 4 RS (attention + MLP)
+        # Overhead: lm_head(2AG+1RS) + init/step(3AG+1RS)
+        exp_ag = L * 3 + full_layers * 3 + 5
+        exp_rs = L * 2 + full_layers * 2 + 2
+
+        assert ag == exp_ag, f"{name}: AG {ag} != expected {exp_ag}"
+        assert rs == exp_rs, f"{name}: RS {rs} != expected {exp_rs}"
 
 
 # ---------------------------------------------------------------------------
