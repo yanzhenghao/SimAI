@@ -213,6 +213,35 @@ unpermute: same as permute
 
 DeepSeekV3 regression passed (538 fwd).
 
+---
+
+## 6. Training Parallelism Configurations
+
+### 6.1 Verified (from official sources)
+
+| Model | Source | TP | PP | EP | CP | Total GPUs |
+|-------|--------|----|----|----|----|------------|
+| Qwen3-235B-A22B (pretrain) | NVIDIA Megatron-Bridge recipe | **4** | **16** | **8** | **2** | 4x16x8 = 512 |
+| Qwen3-235B-A22B (SFT) | NVIDIA Megatron-Bridge recipe | 4 | -- | 4 | -- | 64 (8 nodes) |
+
+### 6.2 Estimated (from NVIDIA node counts, not verified)
+
+| Model | Source | Nodes | GPUs | Likely TP/EP | Rationale |
+|-------|--------|-------|------|-------------|-----------|
+| Qwen3.5-35B-A3B | NVIDIA Megatron-Bridge | 2 | 16 | TP=2, EP=8 | 35B total, 3B active, 256 experts |
+| Qwen3.5-122B-A10B | NVIDIA Megatron-Bridge | 4 | 32 | TP=4, EP=8 | 122B total, 10B active, 256 experts |
+| Qwen3.5-397B-A17B | Not published | -- | -- | TP=4, EP=16? | 397B total, 17B active, 512 experts, topk=10 |
+
+### 6.3 Data Gap
+
+Qwen3.5 was released Feb-Mar 2026. As of 2025-06, no technical report or
+pretraining paper exists for Qwen3.5. The NVIDIA Megatron-Bridge docs provide
+inference node counts but not explicit TP/PP/EP training breakdowns. Estimates
+above assume EP scaling with expert count (Qwen3: 128e/EP8; Qwen3.5: 256e/EP8
+or 512e/EP16) and TP scaling with active parameters (~4-8 per active-param
+tier). These should be treated as placeholders until official documentation
+is published.
+
 ### 5.4 Head-to-head communication comparison
 
 | Comparison | Model A | Items | Model B | Items | Reduction |
