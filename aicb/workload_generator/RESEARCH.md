@@ -211,7 +211,13 @@ unpermute: same as permute
 | Qwen3.5-122B-A10B | 48 | MoE | 362 |
 | Qwen3.5-397B-A17B | 60 | MoE | 452 |
 
-DeepSeekV3 regression passed (538 fwd).
+DeepSeekV3 regression passed (538 fwd). Megatron/LLaMA 3.1 verified: 8B=129, 70B=321,
+405B MoE=883.
+
+Generated workload CSVs in `results/mocked_workload/` (18 files, 9 models):
+- LLaMA: llama8b, llama_405b_moe
+- Qwen3: qwen3_8b, qwen3_30b_a3b, qwen3_235b_a22b
+- Qwen3.5: qwen35_9b, qwen35_35b_a3b, qwen35_122b_a10b, qwen35_397b_a17b
 
 ---
 
