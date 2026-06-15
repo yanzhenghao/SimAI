@@ -1,5 +1,11 @@
 # AICB Workload Generator — CLAUDE.md
 
+> **Research reference**: `RESEARCH.md` contains the definitive architecture
+> comparison (LLaMA 3 vs Qwen3 vs Qwen3.5), verified model parameter tables
+> for all 22 supported models, and the complete research methodology (28 sources
+> across 5 sub-questions). This CLAUDE.md is the operational reference; consult
+> RESEARCH.md for the "why" behind the architecture decisions.
+
 ## Architecture
 
 The AICB workload generator has two independent layers that share model configs:
