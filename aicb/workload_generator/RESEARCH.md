@@ -299,7 +299,12 @@ per-layer communication, with Qwen3.5 adding shared expert TP overhead.
 
 1. MTP not modeled (~2% extra compute, negligible communication).
 2. Inference mocks for Qwen3/Qwen3.5 are skeletal (no forward/backward).
-3. AIOB training benchmarks for Qwen3/Qwen3.5 do not exist (inference AIOB only).
+3. AIOB training benchmarks for Qwen3/Qwen3.5 now EXIST (added 2025-06-15):
+   - AiobQwen3.py: GQA + QK-Norm attention, SwiGLU MLP. No special GPU deps.
+   - AiobQwen3_5.py: GatedDeltaNet (75%) + gated full-attention (25%). Requires
+     flash-linear-attention + causal-conv1d on CUDA. Graceful FLA_AVAILABLE=False
+     fallback on CPU/MPS (structure only, no timings).
+   - Not yet run on GPU hardware -- benchmark structure complete, timings pending.
 4. GatedDeltaNet parameter count approximate (linear weights only).
 5. Qwen3Params training orchestration fields (pp_rank, use_distributed_optimizer)
    set by CLI get_params(), not by Params defaults.
