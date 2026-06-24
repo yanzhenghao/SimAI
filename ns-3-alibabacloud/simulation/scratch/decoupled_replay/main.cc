@@ -121,22 +121,22 @@ int main(int argc, char *argv[]) {
     // Step 3: Load flows from file
     // =====================================================================
     std::cout << "[DecoupledReplay] Loading flows from " << flow_file_path << "..." << std::endl;
-    std::vector<FlowFileRecord> flows = LoadFlows(flow_file_path);
+    LayerMetaMap layer_meta;
+    std::vector<FlowFileRecord> flows = LoadFlows(flow_file_path, layer_meta);
     if (flows.empty()) {
         std::cerr << "ERROR: No flows loaded from " << flow_file_path << std::endl;
         return 1;
     }
-    std::cout << "[DecoupledReplay] Loaded " << flows.size() << " flows." << std::endl;
+    std::cout << "[DecoupledReplay] Loaded " << flows.size() << " flows, "
+              << layer_meta.size() << " layers with metadata." << std::endl;
 
-    // Log flow distribution
-    {
-        std::map<int, int> layer_counts;
-        for (const auto& f : flows) {
-            layer_counts[f.layer_num]++;
-        }
-        std::cout << "[DecoupledReplay] Flow distribution by layer: ";
-        for (const auto& lc : layer_counts) {
-            std::cout << "L" << lc.first << "=" << lc.second << " ";
+    // Log layer metadata
+    for (const auto& kv : layer_meta) {
+        std::cout << "[DecoupledReplay]   Layer " << kv.first
+                  << ": " << kv.second.total_flows << " flows"
+                  << ", compute_before=" << kv.second.compute_before_ns << " ns";
+        if (kv.second.compute_before_ns > 0) {
+            std::cout << " (" << (kv.second.compute_before_ns / 1000000.0) << " ms)";
         }
         std::cout << std::endl;
     }
@@ -147,7 +147,7 @@ int main(int argc, char *argv[]) {
     DepScheduler scheduler;
     g_scheduler = &scheduler;
 
-    if (!scheduler.Init(flows)) {
+    if (!scheduler.Init(flows, layer_meta)) {
         std::cerr << "ERROR: DepScheduler::Init failed" << std::endl;
         return 1;
     }

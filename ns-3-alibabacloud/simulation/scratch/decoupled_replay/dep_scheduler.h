@@ -8,7 +8,7 @@
  *
  * === Scheduling model ===
  *
- * Three gates control when a flow is injected into NS3:
+ * Two per-flow gates + one per-layer gap control flow injection:
  *
  *   1. Flow dependency (hard gate):
  *      A flow is eligible only after ALL flows listed in its prev[] field
@@ -20,36 +20,22 @@
  *      unlocks when ALL flows in Layer N have completed.  Layer 0 is
  *      always unlocked.  This guarantees cross-layer ordering.
  *
- *   3. relative_delay_ns (soft gate):
- *      After a flow becomes eligible (both gates above satisfied), it is
- *      scheduled via Simulator::Schedule(NanoSeconds(relative_delay_ns), ...).
+ *   3. Layer compute gap (soft gate):
+ *      When a layer is fully complete, the next layer is not unlocked
+ *      immediately.  Instead, the GPU compute time for the next layer
+ *      (compute_before_ns from the flow file's layer metadata) is
+ *      scheduled via Simulator::Schedule(...).  Only after this compute
+ *      delay does the next layer unlock and eligible flows are injected.
  *
- *      relative_delay_ns = send_time - max(prev[] QP completion times),
- *      computed by SimAI Phase 1 (MockNcclGroup::finalizeFlowFile).
- *
- *      Because the delay is measured from the moment the LAST predecessor
- *      completed (when the flow becomes eligible), tightly-coupled flows
- *      get delay ≈ 0 and run with realistic overlap.  Gapped flows get a
- *      positive delay that reproduces the coupled-mode spacing.
- *
- * === Why the dependency graph is necessary ===
- *
- * Delta-based timing: relative_delay_ns is only meaningful when measured
- * from the correct baseline -- the moment the last prev[] flow completed.
- * Without the dependency graph, the baseline would be the layer-unlock
- * instant, which could be much later (if intra-layer dependencies exist)
- * or much earlier (if layer N-1 is very fast but our predecessor is slow).
- *
- * The flow dependency graph paired with completion-based relative_delay_ns
- * reproduces the coupled simulation timeline: eligible_time + delay_ns
- * equals the original send_time from the coupled run.
- *
+ *      compute_before_ns comes from SimAI's per-layer forward-pass compute
+ *      time (setLayerComputeTime in the Layer constructor), with AIOB GPU
+ *      profiling providing additional accuracy when available.
  * === Key invariants ===
  *
  *   - Single QP per flow (_QPS_PER_CONNECTION_ == 1)
- *   - Layer 0 is always unlocked; higher layers unlock sequentially
+ *   - Layer 0 is always unlocked; higher layers unlock after compute delay
  *   - prev[] entries are flow IDs (not rank IDs) in the recorded flow file
- *   - relative_delay_ns is computed from completion times, not send times
+ *   - compute_before_ns comes from per-layer forward-pass compute timing
  */
 
 #ifndef __DECOUPLED_DEP_SCHEDULER_H__
@@ -94,17 +80,24 @@ public:
     // ------------------------------------------------------------------
     // Init: build dependency graph and layer tracking from loaded flows
     // ------------------------------------------------------------------
-    bool Init(const std::vector<FlowFileRecord>& flows) {
+    bool Init(const std::vector<FlowFileRecord>& flows, const LayerMetaMap& layer_meta) {
         _total_flows = flows.size();
         _completed_flows = 0;
         _states.clear();
         _in_flight.clear();
         _layer_flow_count.clear();
         _layer_completed.clear();
+        _layer_compute_before.clear();
         _requests.clear();
         _request_by_id.clear();
         _current_unlocked_layer = 0;
         _max_layer = 0;
+        _layer_unlock_scheduled = false;
+
+        // Store layer compute timing
+        for (const auto& kv : layer_meta) {
+            _layer_compute_before[kv.first] = kv.second.compute_before_ns;
+        }
 
         // Build flow_id -> index
         std::unordered_map<uint32_t, size_t> id_to_idx;
@@ -202,15 +195,13 @@ public:
                 continue;
             }
 
-            // Gate 3: relative_delay_ns measured from NOW (the instant
-            // the flow became eligible, i.e. when its last predecessor completed
-            // and its layer was already unlocked).
-            uint64_t delay_ns = st.record.relative_delay_ns;
+            // Flow is eligible — schedule immediately (no artificial delay).
+            // Timing is determined by NS3 network simulation + layer compute gaps.
             st.scheduled = true;
-            st.scheduled_time_ns = Simulator::Now().GetNanoSeconds() + delay_ns;
+            st.scheduled_time_ns = Simulator::Now().GetNanoSeconds();
             _in_flight.insert(fid);
 
-            Simulator::Schedule(NanoSeconds(delay_ns),
+            Simulator::Schedule(NanoSeconds(0),
                               &DepScheduler::DoSendFlow, this, fid);
 
             scheduled_this_round++;
@@ -261,24 +252,48 @@ public:
             }
         }
 
-        // Layer unlock check (G4):
-        // If the current unlocked layer is fully complete, unlock the next layer.
-        while (_current_unlocked_layer <= _max_layer) {
+        // Layer unlock check with compute delay:
+        // When the current unlocked layer is fully complete, schedule the NEXT
+        // layer's compute delay before actually unlocking it.
+        while (_current_unlocked_layer <= _max_layer && !_layer_unlock_scheduled) {
             int total_in_layer = _layer_flow_count[_current_unlocked_layer];
             int completed_in_layer = _layer_completed[_current_unlocked_layer];
-            if (total_in_layer > 0 && completed_in_layer >= total_in_layer) {
-                NS_LOG_DEBUG("[DepScheduler] Layer " << _current_unlocked_layer
-                             << " complete (" << completed_in_layer << "/"
-                             << total_in_layer << "), unlocking layer "
-                             << (_current_unlocked_layer + 1));
-                _current_unlocked_layer++;
+            if (total_in_layer == 0 || completed_in_layer >= total_in_layer) {
+                int next_layer = _current_unlocked_layer + 1;
+                uint64_t compute_delay = 0;
+
+                // Look up compute_before_ns for the next layer
+                auto it = _layer_compute_before.find(next_layer);
+                if (it != _layer_compute_before.end() && it->second > 0) {
+                    compute_delay = it->second;
+                }
+
+                if (compute_delay > 0) {
+                    _layer_unlock_scheduled = true;
+                    NS_LOG_DEBUG("[DepScheduler] Layer " << _current_unlocked_layer
+                                 << " complete, scheduling layer " << next_layer
+                                 << " unlock after " << compute_delay << " ns");
+                    Simulator::Schedule(NanoSeconds(compute_delay),
+                                      &DepScheduler::DoUnlockNextLayer, this, next_layer);
+                    // Do NOT increment _current_unlocked_layer yet — DoUnlockNextLayer will.
+                    // Do NOT call ScheduleReadyFlows() — let DoUnlockNextLayer do it.
+                } else {
+                    // No compute delay: unlock immediately (existing behavior)
+                    NS_LOG_DEBUG("[DepScheduler] Layer " << _current_unlocked_layer
+                                 << " complete (" << completed_in_layer << "/"
+                                 << total_in_layer << "), unlocking layer "
+                                 << next_layer);
+                    _current_unlocked_layer++;
+                }
             } else {
                 break;
             }
         }
 
-        // Schedule newly-ready flows (dependency-unblocked + layer-unlocked)
-        ScheduleReadyFlows();
+        // Schedule newly-ready flows (only if no layer unlock is pending)
+        if (!_layer_unlock_scheduled) {
+            ScheduleReadyFlows();
+        }
     }
 
     // ------------------------------------------------------------------
@@ -300,7 +315,6 @@ public:
         NS_LOG_DEBUG("[DepScheduler] Sending flow " << flow_id
                      << " src=" << st.record.src << " dst=" << st.record.dst
                      << " size=" << st.record.flow_size
-                     << " delay_ns=" << st.record.relative_delay_ns
                      << " at tick=" << Simulator::Now().GetNanoSeconds());
 
         SendFlow((int)st.record.src, (int)st.record.dst,
@@ -466,11 +480,27 @@ private:
     uint32_t _completed_flows = 0;
     std::set<uint32_t> _in_flight;
 
-    // Layer constraint (GAP FIX G4)
+    // Layer constraint + compute gap
     int _current_unlocked_layer = 0;
     int _max_layer = 0;
-    std::map<int, int> _layer_flow_count;    // layer_num -> total flows
-    std::map<int, int> _layer_completed;     // layer_num -> completed flows
+    bool _layer_unlock_scheduled = false;
+    std::map<int, int> _layer_flow_count;     // layer_num -> total flows
+    std::map<int, int> _layer_completed;      // layer_num -> completed flows
+    std::map<int, uint64_t> _layer_compute_before;  // layer_num -> compute_before_ns (ns)
+
+    // DoUnlockNextLayer: scheduled callback after layer N's compute delay
+    void DoUnlockNextLayer(int layer_to_unlock) {
+        if (layer_to_unlock != _current_unlocked_layer + 1) {
+            std::cerr << "[DepScheduler] WARNING: DoUnlockNextLayer(" << layer_to_unlock
+                      << ") but expected layer " << (_current_unlocked_layer + 1)
+                      << " (stale or reordered callback?)" << std::endl;
+        }
+        _current_unlocked_layer = layer_to_unlock;
+        _layer_unlock_scheduled = false;
+        std::cout << "[DepScheduler] Layer " << layer_to_unlock
+                  << " unlocked (compute delay complete)" << std::endl;
+        ScheduleReadyFlows();
+    }
 
     // Heap-allocated FlowRequest objects (lifetime = simulation duration)
     std::vector<FlowRequest*> _requests;

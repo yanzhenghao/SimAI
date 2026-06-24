@@ -34,16 +34,14 @@ namespace MockNccl {
 static void _writeFlowRecord(std::ofstream &f, const SingleFlow &sf,
                              uint32_t maxPkts, uint32_t port, uint32_t dport,
                              double start_ns, int layer_num,
-                             int group_type, int op, int loopstate,
-                             uint64_t relative_delay_ns) {
+                             int group_type, int op, int loopstate) {
   f << sf.flow_id << " " << sf.src << " " << sf.dest << " "
     << sf.flow_size << " " << sf.channel_id << " " << sf.chunk_id << " "
     << sf.chunk_count << " " << sf.conn_type << " "
     << start_ns << " 3 " << maxPkts << " " << port << " " << dport
     << " " << sf.prev.size();
   for (int pid : sf.prev) f << " " << pid;
-  f << " " << layer_num << " " << group_type << " " << op << " " << loopstate
-    << " " << relative_delay_ns << "\n";
+  f << " " << layer_num << " " << group_type << " " << op << " " << loopstate << "\n";
   f.flush();
 }
 
@@ -376,8 +374,7 @@ static void _writeFlowRecord(std::ofstream &f, const SingleFlow &sf,
                   layer_num,
                   (int)type,
                   (int)op,
-                  (int)loopstate,
-                  0
+                  (int)loopstate
               });
             }
       }
@@ -2235,12 +2232,8 @@ void MockNcclGroup::autoEnableFlowOutput() {
   if (p && p[0]) enableFlowFileOutput(p);
 }
 
-void MockNcclGroup::recordFlowSendTime(uint32_t flow_id) {
-    _flow_send_times[flow_id] = Sys::boostedTick();
-}
-
-void MockNcclGroup::recordFlowCompletionTime(uint32_t flow_id) {
-    _flow_completion_times[flow_id] = Sys::boostedTick();
+void MockNcclGroup::setLayerComputeTime(int layer_num, uint64_t compute_ns) {
+    _layer_compute_times[layer_num] = compute_ns;
 }
 
 void MockNcclGroup::finalizeFlowFile() {
@@ -2252,83 +2245,52 @@ void MockNcclGroup::finalizeFlowFile() {
         return;
     }
 
-    // Build per-rank map: rank → sorted list of (flow_id, completion_time)
-    // Needed because sf.prev[] contains rank IDs, not flow IDs.
-    std::unordered_map<uint32_t, std::vector<std::pair<uint32_t, uint64_t>>> rank_completions;
+    // Collect per-layer flow counts and compute timing
+    // _flow_buffer is naturally ordered by layer (event chain processes layers sequentially)
+    std::map<int, uint32_t> layer_flow_count;
+    std::map<int, uint64_t> layer_compute_before_ns;
+    int max_layer = -1;
     for (auto& entry : _flow_buffer) {
-        uint32_t fid = entry.sf->flow_id;
-        if (_flow_completion_times.count(fid)) {
-            rank_completions[entry.sf->src].push_back({fid, _flow_completion_times[fid]});
-            rank_completions[entry.sf->dest].push_back({fid, _flow_completion_times[fid]});
-        }
-    }
-    for (auto& kv : rank_completions) {
-        std::sort(kv.second.begin(), kv.second.end());
+        int ln = entry.layer_num;
+        layer_flow_count[ln]++;
+        if (ln > max_layer) max_layer = ln;
     }
 
-    // Compute relative_delay_ns for each flow using completion times
-    // relative_delay_ns = send_time - max(prev completion times), clamped to 0
-    // prev[] contains rank IDs → resolve to most recent predecessor flow per rank
-    int zero_send_count = 0;
-    for (auto& entry : _flow_buffer) {
-        const auto& sf = *entry.sf;
-        uint64_t my_send_time = 0;
-
-        if (_flow_send_times.count(sf.flow_id)) {
-            my_send_time = _flow_send_times[sf.flow_id];
-        } else {
-            zero_send_count++;
-        }
-
-        if (sf.prev.empty()) {
-            entry.relative_delay_ns = my_send_time;
-        } else {
-            uint64_t max_prev_completion = 0;
-            bool any_completion_recorded = false;
-            for (int prev_rank : sf.prev) {
-                auto rit = rank_completions.find((uint32_t)prev_rank);
-                if (rit == rank_completions.end()) continue;
-                const auto& pairs = rit->second;
-                // Find the most recent flow from this rank that is < sf.flow_id
-                auto lb = std::lower_bound(pairs.begin(), pairs.end(),
-                    std::make_pair(sf.flow_id, (uint64_t)0));
-                if (lb != pairs.begin()) {
-                    --lb;
-                    max_prev_completion = std::max(max_prev_completion, lb->second);
-                    any_completion_recorded = true;
-                }
-            }
-            if (!any_completion_recorded) {
-                // No predecessor completion data; use send_time as-is
-                // (first collective or no QP ever finished before this send)
-                entry.relative_delay_ns = my_send_time;
-            } else {
-                entry.relative_delay_ns = (my_send_time > max_prev_completion)
-                    ? (my_send_time - max_prev_completion) : 0;
-            }
-        }
+    // Compute per-layer compute_before_ns:
+    // Uses AIOB compute timing if available (via workload _elapsed_time), otherwise zero.
+    // Layer 0 compute_before = Embedding time; subsequent layers = attention+mlp time.
+    // For now, _flow_buffer entries carry the layer_num; compute times come from
+    // the workload's per-layer elapsed_time which is threaded through the event chain.
+    // If _compute_times map was populated by the workload layer processing, use it.
+    for (int l = 0; l <= max_layer; l++) {
+        auto it = _layer_compute_times.find(l);
+        layer_compute_before_ns[l] = (it != _layer_compute_times.end()) ? it->second : 0;
     }
 
-    if (zero_send_count > 0) {
-        std::cerr << "[Decoupled] WARNING: " << zero_send_count
-                  << " flows have send_time=0 (never recorded via sim_send())" << std::endl;
-    }
+    int layer_count = max_layer + 1;
 
-    // Step 3: Write all flows to file
+    // Write header: total_flows layer_count
     _flow_file.seekp(0);
-    _flow_file << _flow_buffer.size() << "\n";
+    _flow_file << _flow_buffer.size() << " " << layer_count << "\n";
 
+    // Write layer metadata: layer: <N>  total_flows: <F>  compute_before_ns: <C>
+    for (int l = 0; l <= max_layer; l++) {
+        _flow_file << "layer: " << l
+                   << "  total_flows: " << layer_flow_count[l]
+                   << "  compute_before_ns: " << layer_compute_before_ns[l] << "\n";
+    }
+
+    // Write flow body
     for (auto& entry : _flow_buffer) {
         _writeFlowRecord(_flow_file, *entry.sf,
             entry.max_pkts, entry.port, entry.dport,
             0.0,
-            entry.layer_num, entry.group_type, entry.op, entry.loopstate,
-            entry.relative_delay_ns);
+            entry.layer_num, entry.group_type, entry.op, entry.loopstate);
     }
 
     _flow_file.close();
     std::cout << "[Decoupled] Flow file written: " << _flow_buffer.size()
-              << " flows" << std::endl;
+              << " flows, " << layer_count << " layers" << std::endl;
 }
 
 // ── Replay mode: pre-load flows from file into flow_models cache ──
@@ -2362,7 +2324,8 @@ void MockNcclGroup::loadFlowsFromFile() {
         if (is >> nchi) { for (uint32_t j=0; j<nchi; j++) is >> dummy; }
       }  // parent_flow_id/child_flow_id removed — read-and-discard for compat
     is >> pf.layer_num >> pf.group_type >> pf.op >> pf.loopstate;
-    { uint64_t dummy_rdn; if (!(is >> dummy_rdn)) { /* legacy format, no relative_delay_ns */ } }
+    // relative_delay_ns removed from flow file — skip for backward compat
+    { uint64_t dummy; if (!(is >> dummy)) { is.clear(); } }
     // Build cache key: group_type_layerNum_loopstate_op (no rank)
     char key[128];
     snprintf(key, sizeof(key), "%d_%d_%d_%d",
@@ -2389,14 +2352,14 @@ void MockNcclGroup::loadFlowsFromFile() {
 }
 
 MockNcclGroup::~MockNcclGroup() {
-    if (_flow_file.is_open() && !_flow_buffer.empty()) {
-        std::cerr << "[Decoupled] WARNING: finalizeFlowFile() was not called explicitly; calling from destructor" << std::endl;
-        finalizeFlowFile();
-    }
     if (_flow_file.is_open()) {
-        _flow_file.seekp(0);
-        _flow_file << _flow_buffer.size() << std::endl;
-        _flow_file.close();
+        if (!_flow_buffer.empty()) {
+            std::cerr << "[Decoupled] WARNING: finalizeFlowFile() was not called"
+                         " explicitly; calling from destructor" << std::endl;
+        }
+        // finalizeFlowFile() handles empty and non-empty buffers with
+        // consistent new format (header + layer metadata + body)
+        finalizeFlowFile();
     }
 }
 }

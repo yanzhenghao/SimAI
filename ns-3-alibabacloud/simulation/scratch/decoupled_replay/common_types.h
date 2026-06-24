@@ -205,7 +205,6 @@ struct FlowRecord {
     uint32_t group_type;            // GroupType enum: TP=0, DP=1, EP=2, DP_EP=3
     uint32_t op;                    // ComType enum
     uint32_t loopstate;             // State enum: FWD=0, WG=1, IG=2
-    uint64_t relative_delay_ns;     // completion-based: send_time - max(prev completion times), clamped to 0
 };
 
 // ============================================================================

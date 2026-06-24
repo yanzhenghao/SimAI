@@ -18,8 +18,8 @@ LICENSE file in the root directory of this source tree.
 using namespace ns3;
 #endif
 
-
-
+// Access GlobalGroup for per-layer compute timing in decoupled replay
+extern MockNccl::MockNcclGroup* GlobalGroup;
 
 namespace AstraSim {
 Layer::Layer(
@@ -87,6 +87,13 @@ Layer::Layer(
   this->is_checkpoint = false;
   this->specific_parallellism = specific_policy;
   assert(generator != NULL);
+
+  // Per-layer compute timing for decoupled replay.
+  // compute_before_ns = GPU forward-pass compute time before this layer
+  // starts communication.  AIOB profiling provides more accurate timings.
+  if (GlobalGroup != nullptr) {
+    GlobalGroup->setLayerComputeTime(layer_num, fwd_pass_compute_time);
+  }
 }
 
 void Layer::call(EventType event, CallData* mdata) {

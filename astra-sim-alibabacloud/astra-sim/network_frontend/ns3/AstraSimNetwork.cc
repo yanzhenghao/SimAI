@@ -137,11 +137,6 @@ public:
       cs.ExitSection();
       #endif
     }
-    // Record send time for decoupled replay
-    if (request && GlobalGroup) {
-        GlobalGroup->recordFlowSendTime(request->flowTag.current_flow_id);
-    }
-
     SendFlow(rank, dst, count, msg_handler, fun_arg, tag, request);
     return 0;
   }

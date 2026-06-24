@@ -139,17 +139,14 @@ namespace MockNccl {
       std::shared_ptr<SingleFlow> sf;
       uint32_t max_pkts, port, dport;
       int layer_num, group_type, op, loopstate;
-      uint64_t relative_delay_ns;
     };
     std::vector<FlowWriteEntry> _flow_buffer;
-    std::unordered_map<uint32_t, uint64_t> _flow_send_times;
-    std::unordered_map<uint32_t, uint64_t> _flow_completion_times;
+    std::map<int, uint64_t> _layer_compute_times;  // layer_num → compute_before_ns (from AIOB)
 
     void enableFlowFileOutput(const std::string &path);
     void autoEnableFlowOutput();
     void loadFlowsFromFile();
-    void recordFlowSendTime(uint32_t flow_id);
-    void recordFlowCompletionTime(uint32_t flow_id);
+    void setLayerComputeTime(int layer_num, uint64_t compute_ns);
     void finalizeFlowFile();
     std::map<std::string,int> FlowName2nums;
     std::map<std::string ,std::map<int,std::shared_ptr<FlowModels> >> flow_models; 
