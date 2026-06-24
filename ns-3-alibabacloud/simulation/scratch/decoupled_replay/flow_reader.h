@@ -51,8 +51,8 @@ struct FlowFileRecord {
     uint32_t layer_num = 0;
     uint32_t group_type = 0;
     uint32_t op = 0;
+    uint32_t loopstate = 0;
 
-    bool valid() const {
     bool valid() const {
         return flow_size > 0 || (src != dst);
     }
