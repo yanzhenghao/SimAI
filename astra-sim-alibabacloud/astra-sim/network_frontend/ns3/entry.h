@@ -454,6 +454,10 @@ void qp_finish(FILE *fout, Ptr<RdmaQueuePair> q) {
   }
   notify_receiver_receive_data(sid, did, notify_size, flowTag);
   last_flow_finish_ns = Simulator::Now().GetNanoSeconds();
+  // Record completion for decoupled replay relative_delay_ns calculation
+  if (GlobalGroup) {
+    GlobalGroup->recordFlowCompletionTime(flowTag.current_flow_id);
+  }
 }
 
 void send_finish(FILE *fout, Ptr<RdmaQueuePair> q) {

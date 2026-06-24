@@ -114,7 +114,7 @@ int main(int argc,char *argv[]) {
     "",
     WORKLOAD_PATH + param->workload,
     param->comm_scale,
-    1,
+    param->compute_scale,
     1,
     1,
     0,

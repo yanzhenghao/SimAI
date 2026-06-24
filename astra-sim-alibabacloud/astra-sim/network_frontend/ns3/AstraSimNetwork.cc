@@ -229,18 +229,20 @@ struct user_param {
   string workload;
   string network_topo;
   string network_conf;
+  float compute_scale;
   user_param() {
     thread = 1;
     workload = "";
     network_topo = "";
     network_conf = "";
+    compute_scale = 1.0;
   };
   ~user_param(){};
 };
 
 static int user_param_prase(int argc,char * argv[],struct user_param* user_param){
   int opt;
-  while ((opt = getopt(argc,argv,"ht:w:g:s:n:c:"))!=-1){
+  while ((opt = getopt(argc,argv,"ht:w:g:s:n:c:x:"))!=-1){
     switch (opt)
     {
     case 'h':
@@ -249,6 +251,7 @@ static int user_param_prase(int argc,char * argv[],struct user_param* user_param
       std::cout<<"-w    workloads default none "<<std::endl;
       std::cout<<"-n    network topo"<<std::endl;
       std::cout<<"-c    network_conf"<<std::endl;
+      std::cout<<"-x    compute_scale (default 1.0). Use 0.3-0.5 for realistic training FLOPs efficiency"<<std::endl;
       return 1;
       break;
     case 't':
@@ -262,6 +265,9 @@ static int user_param_prase(int argc,char * argv[],struct user_param* user_param
       break;
     case 'c':
       user_param->network_conf = optarg;
+      break;
+    case 'x':
+      user_param->compute_scale = stof(optarg);
       break;
     default:
       std::cerr<<"-h    help message"<<std::endl;
@@ -331,10 +337,10 @@ int main(int argc, char *argv[]) {
         {nodes_num},        
         {1},          
         "", 
-        user_param.workload, 
-        1, 
-        1,          
-        1,          
+        user_param.workload,
+        1,
+        user_param.compute_scale,
+        1,
         1,
         0,                 
         get_result_path(), 

@@ -73,6 +73,7 @@ private:
     gpus = {};
     workload = {};
     comm_scale = 1;
+    compute_scale = 1;
     mode = ModeType::MOCKNCCL;
   }
 
@@ -84,6 +85,7 @@ public:
   std::string res_folder = "None";
   std::string lang = "en";
   int comm_scale;
+  float compute_scale;
   ModeType mode;
   NetWorkParam net_work_param;
 
@@ -116,6 +118,7 @@ int parse(int argc, char *argv[]) {
             std::cout << "-tp_o, --tp_overlap    tp overlap ratio(Default 0)" << std::endl;
             std::cout << "-pp_o, --pp_overlap    pp overlap ratio(Default 1)" << std::endl;
             std::cout << "-l, --lang               Language of the report (en or ja), default en" << std::endl;
+            std::cout << "-cs, --compute_scale     Compute time scaling factor (default 1.0). Use 0.3-0.5 for realistic training FLOPs efficiency" << std::endl;
             return 1;
         } else if (arg == "-w" || arg == "--workload") {
             if (++i < argc) this->workload = argv[i];
@@ -155,6 +158,8 @@ int parse(int argc, char *argv[]) {
             if (++i < argc) this->net_work_param.ep_overlap_ratio = std::stof(argv[i]);
         }else if (arg == "--pp_overlap" || arg == "-pp_o") {
             if (++i < argc) this->net_work_param.pp_overlap_ratio = std::stof(argv[i]);
+        } else if (arg == "-cs" || arg == "--compute_scale") {
+            if (++i < argc) this->compute_scale = std::stof(argv[i]);
         } else if (arg == "-l" || arg == "--lang") {
             if (++i < argc) {
                 std::string lang_str = argv[i];

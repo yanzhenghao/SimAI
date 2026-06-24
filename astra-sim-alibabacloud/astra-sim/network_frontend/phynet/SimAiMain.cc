@@ -43,6 +43,7 @@ struct user_param {
   int gpus;
   string workload;
   int comm_scale;
+  float compute_scale;
   GPUType gpu_type;
   int nvswitch_num;
   int gpus_per_server;
@@ -52,6 +53,7 @@ struct user_param {
     gpus = 8;
     workload = "microAllReduce.txt";
     comm_scale = 1;
+    compute_scale = 1.0;
     gpu_type = GPUType::A100;
     nvswitch_num = 1;
     gpus_per_server = 8 ;
@@ -72,9 +74,10 @@ static int user_param_prase(int argc,char * argv[],struct user_param* user_param
         {"workloads", required_argument, 0, 'w'},
         {"gpus", required_argument, 0, 'g'},
         {"comm_scale", required_argument, 0, 's'},
+        {"compute_scale", required_argument, 0, 'x'},
         {"gid_index", required_argument, 0, 'i'},
         {0, 0, 0, 0}};
-  while ((opt = getopt(argc,argv,"ht:w:g:s:i:"))!=-1){
+  while ((opt = getopt(argc,argv,"ht:w:g:s:x:i:"))!=-1){
     switch (opt)
     {
     case 'h':
@@ -82,6 +85,7 @@ static int user_param_prase(int argc,char * argv[],struct user_param* user_param
       std::cout<<"-w    workloads default microAllReduce.txt "<<std::endl;
       std::cout<<"-g    number of gpus,default 1"<<std::endl;
       std::cout<<"-s    comm_scale default 1"<<std::endl;
+      std::cout<<"-x    compute_scale default 1.0. Use 0.3-0.5 for realistic training FLOPs efficiency"<<std::endl;
       std::cout<<"-i    rdma gid_indxe default 0" <<std::endl;
       break;
     case 't':
@@ -98,6 +102,9 @@ static int user_param_prase(int argc,char * argv[],struct user_param* user_param
       break;
     case 's':
       user_param->comm_scale = stof(optarg);
+      break;
+    case 'x':
+      user_param->compute_scale = stof(optarg);
       break;
     case 'i':
       user_param->gid_index = stoi(optarg);
@@ -149,7 +156,7 @@ int main(int argc,char *argv[]){
     "",
     user_param.workload,
     user_param.comm_scale,
-    1,
+    user_param.compute_scale,
     1,
     1,
     0,
