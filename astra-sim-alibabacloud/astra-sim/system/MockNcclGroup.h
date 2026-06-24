@@ -136,7 +136,7 @@ namespace MockNccl {
 
     // Decoupled mode: accumulate flows for deferred write
     struct FlowWriteEntry {
-      SingleFlow sf;
+      std::shared_ptr<SingleFlow> sf;
       uint32_t max_pkts, port, dport;
       int layer_num, group_type, op, loopstate;
       uint64_t relative_delay_ns;

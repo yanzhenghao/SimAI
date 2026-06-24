@@ -20,8 +20,6 @@
 #include <memory>
 #include "astra-sim/system/Common.hh"
 #include "MockNcclGroup.h"
-
-namespace MockNccl {
   struct SingleFlow{
     int flow_id;
     int src;

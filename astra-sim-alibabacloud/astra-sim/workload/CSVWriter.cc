@@ -15,6 +15,7 @@ void CSVWriter::write_line(std::string data){
     myFile.open(path + name, std::ios::out | std::ios::app);
   }
   myFile << data << std::endl;
+  myFile.flush();
   }
 void CSVWriter::write_res(std::string data) {
   myFile.close(); 

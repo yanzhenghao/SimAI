@@ -42,10 +42,6 @@ static void _writeFlowRecord(std::ofstream &f, const SingleFlow &sf,
     << start_ns << " 3 " << maxPkts << " " << port << " " << dport
     << " " << sf.prev.size();
   for (int pid : sf.prev) f << " " << pid;
-  f << " " << sf.parent_flow_id.size();
-  for (int pid : sf.parent_flow_id) f << " " << pid;
-  f << " " << sf.child_flow_id.size();
-  for (int cid : sf.child_flow_id) f << " " << cid;
   f << " " << layer_num << " " << group_type << " " << op << " " << loopstate
     << " " << relative_delay_ns << "\n";
   f.flush();
@@ -2260,10 +2256,10 @@ void MockNcclGroup::finalizeFlowFile() {
     // Needed because sf.prev[] contains rank IDs, not flow IDs.
     std::unordered_map<uint32_t, std::vector<std::pair<uint32_t, uint64_t>>> rank_completions;
     for (auto& entry : _flow_buffer) {
-        uint32_t fid = entry.sf.flow_id;
+        uint32_t fid = entry.sf->flow_id;
         if (_flow_completion_times.count(fid)) {
-            rank_completions[entry.sf.src].push_back({fid, _flow_completion_times[fid]});
-            rank_completions[entry.sf.dest].push_back({fid, _flow_completion_times[fid]});
+            rank_completions[entry.sf->src].push_back({fid, _flow_completion_times[fid]});
+            rank_completions[entry.sf->dest].push_back({fid, _flow_completion_times[fid]});
         }
     }
     for (auto& kv : rank_completions) {
@@ -2275,7 +2271,7 @@ void MockNcclGroup::finalizeFlowFile() {
     // prev[] contains rank IDs → resolve to most recent predecessor flow per rank
     int zero_send_count = 0;
     for (auto& entry : _flow_buffer) {
-        const auto& sf = entry.sf;
+        const auto& sf = *entry.sf;
         uint64_t my_send_time = 0;
 
         if (_flow_send_times.count(sf.flow_id)) {
@@ -2323,7 +2319,7 @@ void MockNcclGroup::finalizeFlowFile() {
     _flow_file << _flow_buffer.size() << "\n";
 
     for (auto& entry : _flow_buffer) {
-        _writeFlowRecord(_flow_file, entry.sf,
+        _writeFlowRecord(_flow_file, *entry.sf,
             entry.max_pkts, entry.port, entry.dport,
             0.0,
             entry.layer_num, entry.group_type, entry.op, entry.loopstate,
@@ -2361,12 +2357,10 @@ void MockNcclGroup::loadFlowsFromFile() {
       is >> st >> pg >> mpc >> port >> dport >> np;
       for (uint32_t j=0; j<np; j++) { uint32_t pid; is >> pid; pf.sf.prev.push_back(pid); }
     }
-      { uint32_t npar, nchi;
-        is >> npar;
-        for (uint32_t j=0; j<npar; j++) { int pid; is >> pid; pf.sf.parent_flow_id.push_back(pid); }
-        is >> nchi;
-        for (uint32_t j=0; j<nchi; j++) { int cid; is >> cid; pf.sf.child_flow_id.push_back(cid); }
-      }
+      { uint32_t npar, nchi; int dummy;
+        if (is >> npar) { for (uint32_t j=0; j<npar; j++) is >> dummy; }
+        if (is >> nchi) { for (uint32_t j=0; j<nchi; j++) is >> dummy; }
+      }  // parent_flow_id/child_flow_id removed — read-and-discard for compat
     is >> pf.layer_num >> pf.group_type >> pf.op >> pf.loopstate;
     { uint64_t dummy_rdn; if (!(is >> dummy_rdn)) { /* legacy format, no relative_delay_ns */ } }
     // Build cache key: group_type_layerNum_loopstate_op (no rank)
