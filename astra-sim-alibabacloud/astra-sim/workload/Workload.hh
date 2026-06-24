@@ -82,6 +82,10 @@ class Workload : Callable {
   uint32_t pp_commsize;
   ParallelismPolicy parallelismPolicy;
   Tick waiting_for_comm;
+  // Overlap state for two-phase compute-comm concurrency
+  bool compute_finished;
+  bool overlap_active;
+  Tick overlap_compute_delay;
   Workload(
       std::string run_name,
       Sys* generator,

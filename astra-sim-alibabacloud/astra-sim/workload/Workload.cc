@@ -7,6 +7,7 @@ LICENSE file in the root directory of this source tree.
 #include "CSVWriter.hh"
 #include "Layer.hh"
 #include "astra-sim/system/MockNcclLog.h"
+#include "astra-sim/system/AstraParamParse.hh"
 #include <sstream>
 
 namespace AstraSim {
@@ -108,6 +109,9 @@ Workload::Workload(
   this->pass_counter = 0;
   this->index = 0;
   this->waiting_for_comm = 0;
+  this->compute_finished = false;
+  this->overlap_active = false;
+  this->overlap_compute_delay = 0;
   end_to_end = nullptr;
   detailed = nullptr;
   dimension_utilization = nullptr;
@@ -768,84 +772,181 @@ void Workload::iterate_hybrid_parallel_Transformer() {
     if (delay_loaded == false) {
       counter = layers[index]->get_fwd_pass_compute();
       delay_loaded = true;
+      collective_issued = false;
+      overlap_active = false;
+      compute_finished = false;
+
+      // Determine overlap ratio based on fwd comm group type (TP or EP)
+      UserParam* param = UserParam::getInstance();
+      float ratio = 0.0f;
+      if (layers[index]->fwd_pass_group_type == MockNccl::GroupType::EP) {
+        ratio = param->net_work_param.ep_overlap_ratio;
+      } else {
+        ratio = param->net_work_param.tp_overlap_ratio;
+      }
+      overlap_compute_delay = static_cast<Tick>(counter * ratio);
     }
-    if (counter > 0) {
-      generator->try_register_event(
-          this, EventType::Workload_Wait, NULL, counter);
-      return;
+
+    // --- Phase 1: pure compute (no comm) ---
+    if (!overlap_active && counter > 0) {
+      Tick phase1_ticks = counter - overlap_compute_delay;
+      if (phase1_ticks > 0) {
+        counter = phase1_ticks;
+        generator->try_register_event(
+            this, EventType::Workload_Wait, NULL, counter);
+        return;
+      }
     }
-    if (!collective_issued) {
+
+    // --- Transition: issue comm non-blockingly, start Phase 2 ---
+    if (!overlap_active && counter <= 0) {
+      overlap_active = true;
       collective_issued = true;
       layers[index]->issue_forward_pass_comm(
-          SchedulingPolicy::None, CollectiveBarrier::Blocking);
+          SchedulingPolicy::None, CollectiveBarrier::Non_Blocking);
+
+      counter = overlap_compute_delay;
+      if (counter > 0) {
+        generator->try_register_event(
+            this, EventType::Workload_Wait, NULL, counter);
+        return;
+      }
+    }
+
+    // --- Phase 2 done: check comm status ---
+    if (overlap_active && counter <= 0) {
+      if (!layers[index]->is_fwd_pass_comm_finished_blocking()) {
+        compute_finished = true;
+        return;
+      }
+      compute_finished = false;
+      overlap_active = false;
+      delay_loaded = false;
+      collective_issued = false;
+      index++;
+      if (index >= SIZE) {
+        current_state = LoopState::Input_Gradient;
+        index--;
+      }
+      generator->register_event(this, EventType::General, NULL, 1);
       return;
     }
-    index++;
-    delay_loaded = false;
-    collective_issued = false;
-    if (index >= SIZE) {
-      current_state = LoopState::Input_Gradient;
-      index--;
-    }
-    generator->register_event(this, EventType::General, NULL, 1);
-    return;
   } else if (current_state == LoopState::Weight_Gradient) {
     if (delay_loaded == false) {
       counter = layers[index]->get_weight_grad_compute();
       delay_loaded = true;
+      collective_issued = false;
+      overlap_active = false;
+      compute_finished = false;
+
+      UserParam* param = UserParam::getInstance();
+      float ratio = param->net_work_param.dp_overlap_ratio;
+      overlap_compute_delay = static_cast<Tick>(counter * ratio);
     }
-    if (counter > 0) {
-      generator->try_register_event(
-          this, EventType::Workload_Wait, NULL, counter);
-      return;
+
+    if (!overlap_active && counter > 0) {
+      Tick phase1_ticks = counter - overlap_compute_delay;
+      if (phase1_ticks > 0) {
+        counter = phase1_ticks;
+        generator->try_register_event(
+            this, EventType::Workload_Wait, NULL, counter);
+        return;
+      }
     }
-    if (!collective_issued) {
+
+    if (!overlap_active && counter <= 0) {
+      overlap_active = true;
       collective_issued = true;
       layers[index]->issue_weight_grad_comm(
           SchedulingPolicy::FIFO, CollectiveBarrier::Non_Blocking);
+      counter = overlap_compute_delay;
+      if (counter > 0) {
+        generator->try_register_event(
+            this, EventType::Workload_Wait, NULL, counter);
+        return;
+      }
     }
-    if (!layers[index]->is_input_grad_comm_finished_blocking()) {
+
+    if (overlap_active && counter <= 0) {
+      if (!layers[index]->is_input_grad_comm_finished_blocking()) {
+        compute_finished = true;
+        return;
+      }
+      compute_finished = false;
+      overlap_active = false;
+      collective_issued = false;
+      delay_loaded = false;
+      if (index >= 0) {
+        index--;
+      }
+      if (index == -1) {
+        index = 0;
+        if (generator->id == 0) {
+          std::cout << "pass: " << pass_counter
+                    << " finished at time: " << Sys::boostedTick() << std::endl;
+        }
+        pass_counter++;
+        current_state = LoopState::Forward_Pass;
+      } else {
+        current_state = LoopState::Input_Gradient;
+      }
+      generator->register_event(this, EventType::General, NULL, 1);
       return;
     }
-    collective_issued = false;
-    delay_loaded = false;
-    if (index >= 0) {
-      index--;
-    }
-    if (index == -1) {
-      index = 0;
-      if (generator->id == 0) {
-        std::cout << "pass: " << pass_counter
-                  << " finished at time: " << Sys::boostedTick() << std::endl;
-      }
-      pass_counter++;
-      current_state = LoopState::Forward_Pass;
-    } else {
-      current_state = LoopState::Input_Gradient;
-    }
-    generator->register_event(this, EventType::General, NULL, 1);
-    return;
   } else if (current_state == LoopState::Input_Gradient) {
     if (delay_loaded == false) {
       counter = layers[index]->get_input_grad_compute();
       delay_loaded = true;
+      collective_issued = false;
+      overlap_active = false;
+      compute_finished = false;
+
+      UserParam* param = UserParam::getInstance();
+      float ratio = 0.0f;
+      if (layers[index]->input_grad_group_type == MockNccl::GroupType::EP) {
+        ratio = param->net_work_param.ep_overlap_ratio;
+      } else {
+        ratio = param->net_work_param.tp_overlap_ratio;
+      }
+      overlap_compute_delay = static_cast<Tick>(counter * ratio);
     }
-    if (counter > 0) {
-      generator->try_register_event(
-          this, EventType::Workload_Wait, NULL, counter);
-      return;
+
+    if (!overlap_active && counter > 0) {
+      Tick phase1_ticks = counter - overlap_compute_delay;
+      if (phase1_ticks > 0) {
+        counter = phase1_ticks;
+        generator->try_register_event(
+            this, EventType::Workload_Wait, NULL, counter);
+        return;
+      }
     }
-    if (!collective_issued) {
+
+    if (!overlap_active && counter <= 0) {
+      overlap_active = true;
       collective_issued = true;
       layers[index]->issue_input_grad_comm(
-          SchedulingPolicy::LIFO, CollectiveBarrier::Blocking);
+          SchedulingPolicy::LIFO, CollectiveBarrier::Non_Blocking);
+      counter = overlap_compute_delay;
+      if (counter > 0) {
+        generator->try_register_event(
+            this, EventType::Workload_Wait, NULL, counter);
+        return;
+      }
+    }
+
+    if (overlap_active && counter <= 0) {
+      if (!layers[index]->is_input_grad_comm_finished_blocking()) {
+        compute_finished = true;
+        return;
+      }
+      compute_finished = false;
+      overlap_active = false;
+      collective_issued = false;
+      delay_loaded = false;
+      current_state = LoopState::Weight_Gradient;
+      generator->register_event(this, EventType::General, NULL, 1);
       return;
     }
-    collective_issued = false;
-    delay_loaded = false;
-    current_state = LoopState::Weight_Gradient;
-    generator->register_event(this, EventType::General, NULL, 1);
-    return;
   }
 }
 void Workload::iterate_hybrid_parallel_Transformer_fwd_in_bckwd() {

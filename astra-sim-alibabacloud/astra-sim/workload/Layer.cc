@@ -144,7 +144,10 @@ void Layer::call(EventType event, CallData* mdata) {
       int dataset_streams = weight_grad_datasets[data]->total_streams;
       delete weight_grad_datasets[data];
       weight_grad_datasets.erase(data);
-      workload->call(EventType::General, NULL);
+      if (workload->compute_finished) {
+        workload->compute_finished = false;
+        workload->call(EventType::General, NULL);
+      }
       generator->increase_finished_streams(dataset_streams);
       delete intData;
       return;
@@ -189,7 +192,10 @@ void Layer::call(EventType event, CallData* mdata) {
       int dataset_streams = input_grad_datasets[data]->total_streams;
       delete input_grad_datasets[data];
       input_grad_datasets.erase(data);
-      workload->call(EventType::General, NULL);
+      if (workload->compute_finished) {
+        workload->compute_finished = false;
+        workload->call(EventType::General, NULL);
+      }
       generator->increase_finished_streams(dataset_streams);
       delete intData;
       return;
@@ -234,7 +240,10 @@ void Layer::call(EventType event, CallData* mdata) {
       int dataset_streams = fwd_pass_datasets[data]->total_streams;
       delete fwd_pass_datasets[data];
       fwd_pass_datasets.erase(data);
-      workload->call(EventType::General, NULL);
+      if (workload->compute_finished) {
+        workload->compute_finished = false;
+        workload->call(EventType::General, NULL);
+      }
       generator->increase_finished_streams(dataset_streams);
       delete intData;
       return;
@@ -594,22 +603,17 @@ LayerData Layer::report(
   if (id != "embedding_layer"){
       pre_bubble_time += ((total_waiting_for_fwd_comm + total_forward_pass_compute + total_weight_grad_compute + total_input_grad_compute + total_waiting_for_ig_comm) / FREQ);
     }
+  // Event-level overlap already modeled in simulation timeline.
   if(weight_grad_group_type == MockNccl::GroupType::DP_EP){
-    total_waiting_for_wg_comm *= (1-param->net_work_param.dp_overlap_ratio);
     DP_EP_comm += (total_waiting_for_wg_comm / FREQ);
   }
   else{
-    total_waiting_for_wg_comm *= (1-param->net_work_param.dp_overlap_ratio);
     DP_comm += (total_waiting_for_wg_comm / FREQ);
   }
   if(fwd_pass_group_type == MockNccl::GroupType::EP){
-    total_waiting_for_fwd_comm *= (1-param->net_work_param.ep_overlap_ratio);
-    total_waiting_for_ig_comm *= (1-param->net_work_param.ep_overlap_ratio);
     Expose_EP_comm += ((total_waiting_for_fwd_comm + total_waiting_for_ig_comm) / FREQ);
   }
   else{
-    total_waiting_for_fwd_comm *= (1-param->net_work_param.tp_overlap_ratio);
-    total_waiting_for_ig_comm *= (1-param->net_work_param.tp_overlap_ratio);
     Expose_TP_comm += ((total_waiting_for_fwd_comm + total_waiting_for_ig_comm) / FREQ);
   }
 
