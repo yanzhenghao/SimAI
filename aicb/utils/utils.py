@@ -628,7 +628,8 @@ def get_params():
                         )
     parser.add_argument("--epoch_num", type=int, default=1,
                         help="Number of iterations")
-    parser.add_argument("--computation_enable", action="store_true", help="Enable computation")
+    parser.add_argument("--computation_enable", action="store_true", default=True, help="Enable computation (default: True)")
+    parser.add_argument("--no_computation", action="store_false", dest="computation_enable", help="Disable computation")
     parser.add_argument("--dtype", default="bfloat16")
     parser.add_argument(
         "--ffn_hidden_size",

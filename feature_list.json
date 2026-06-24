@@ -1,6 +1,6 @@
 {
   "project": "SimAI-OXC",
-  "updated": "2026-06-04T07:00:00Z",
+  "updated": "2026-06-24T00:00:00Z",
   "summary": {
     "done": 5,
     "pending": 1,
@@ -249,6 +249,33 @@
       "created_at": "2026-06-08T00:00:00Z",
       "updated_at": "2026-06-08T00:00:00Z",
       "confidence": "HIGH: 确定性重命名。搜索确认所有出现位置，npu_match server_ip 保留不改。"
+    },
+    {
+      "id": "F093",
+      "type": "feature",
+      "category": "compute-gap",
+      "description": "AIOB compute-time hardening for Megatron workload generator: replace bare args with self.args, populate grad_gather/grad_param_comm items with real AIOB times, fix final_column attention misidentification, add compute_time diagnostic logging",
+      "status": "in_progress",
+      "priority": "P0",
+      "files": [
+        "aicb/workload_generator/SimAI_training_workload_generator.py",
+        "aicb/utils/utils.py",
+        "server/simulation/workload_generator.py",
+        "server/simulation/workload_routes.py",
+        "example/workload_gpt13b_128g.txt",
+        "example/workload_analytical.txt"
+      ],
+      "verification_steps": [
+        "workload_generate_aiob() runs without bare args global dependency (self.args used consistently)",
+        "grad_gather/grad_param_comm items have non-1 compute times from AIOB data",
+        "All layer items (attention_column, mlp_column, attention_row, mlp_row, embedding_layer) have real compute_times > 1",
+        "Regenerated workload_gpt13b_128g.txt has realistic compute gaps between layers",
+        "96 GPU simulation shows layers are staggered in time (not all comm firing simultaneously)"
+      ],
+      "passes": false,
+      "created_at": "2026-06-24T00:00:00Z",
+      "confidence": "HIGH: well-defined fixes to already-working AIOB integration, root cause of compute_time=1 is stale workload file + fragile global args pattern",
+      "updated_at": "2026-06-24T00:00:00Z"
     }
   ],
   "done": [
@@ -1443,5 +1470,5 @@
       "passes": false
     }
   ],
-  "in_progress": 2
+  "in_progress": 3
 }

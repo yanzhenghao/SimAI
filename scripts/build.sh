@@ -26,7 +26,7 @@ function compile {
         cd "${SIMAI_DIR:?}"
         ./build.sh -lr ns3
         ./build.sh -c ns3
-        ln -sfr "${SOURCE_NS3_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_simulator;;
+        ln -sf "${SOURCE_NS3_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_simulator;;
     "ns3_oxc")
         mkdir -p "${TARGET_BIN_DIR:?}"
         rm -rf "${SIMAI_DIR:?}"/extern/network_backend/ns3-interface/
@@ -38,7 +38,7 @@ function compile {
         cd "${SIMAI_DIR:?}"
         ./build.sh -lr ns3
         ./build.sh -c ns3 OXC
-        ln -sfr "${SOURCE_NS3_OXC_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_simulator_oxc;;
+        ln -sf "${SOURCE_NS3_OXC_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_simulator_oxc;;
     "phy")
         mkdir -p "${TARGET_BIN_DIR:?}"
         if [ -L "${TARGET_BIN_DIR:?}/SimAI_phynet" ]; then
@@ -47,7 +47,7 @@ function compile {
         cd "${SIMAI_DIR:?}"
         ./build.sh -lr phy
         ./build.sh -c phy
-        ln -sfr "${SOURCE_PHY_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_phynet;;
+        ln -sf "${SOURCE_PHY_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_phynet;;
     "analytical")
         mkdir -p "${TARGET_BIN_DIR:?}"
         mkdir -p "${ROOT_DIR:?}"/results
@@ -57,7 +57,7 @@ function compile {
         cd "${SIMAI_DIR:?}"
         ./build.sh -lr analytical
         ./build.sh -c analytical
-        ln -sfr "${SOURCE_ANA_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_analytical;;
+        ln -sf "${SOURCE_ANA_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_analytical;;
     "analytical_oxc")
         mkdir -p "${TARGET_BIN_DIR:?}"
         mkdir -p "${ROOT_DIR:?}"/results
@@ -67,7 +67,7 @@ function compile {
         cd "${SIMAI_DIR:?}"
         ./build.sh -lr analytical
         ./build.sh -c analytical OXC
-        ln -sfr "${SOURCE_ANA_OXC_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_analytical_oxc;;
+        ln -sf "${SOURCE_ANA_OXC_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_analytical_oxc;;
     "oxc")
         mkdir -p "${TARGET_BIN_DIR:?}"
         mkdir -p "${ROOT_DIR:?}"/results
@@ -77,7 +77,7 @@ function compile {
         cd "${SIMAI_DIR:?}"
         ./build.sh -lr oxc
         ./build.sh -c oxc
-        ln -sfr "${SOURCE_OXC_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_oxc;;
+        ln -sf "${SOURCE_OXC_BIN_DIR:?}" "${TARGET_BIN_DIR:?}"/SimAI_oxc;;
     esac
 }
 

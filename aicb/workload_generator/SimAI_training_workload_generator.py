@@ -87,13 +87,34 @@ class LayerInfo:
 
 
 class SIMAI_workload:
+    # Fallback per-kernel compute times from AIOB GPU profiling (microseconds).
+    # Used when no --aiob_enable or --comp_filepath is provided.
+    _FALLBACK_COMPUTE_US = {
+        "attention_forward": 4532,
+        "attention_backward": 9064,
+        "mlp_forward": 1102,
+        "mlp_backward": 2204,
+        "grad_forward": 33,
+        "grad_backward": 5826,
+        "Emb": 33586,
+        "layernorm": 224,
+        "logit": 1394,
+        "param_time": 5826,
+        "attention_linear_q_lora": 224,
+        "attention_q_column": 399,
+        "attention_kv_column": 0,
+        "attention_o_row": 0,
+    }
+
     def __init__(self, model, args, compute_cache=None):
+        if compute_cache is None:
+            compute_cache = self._FALLBACK_COMPUTE_US
         self.model = model
         self.args = args
         self.compute_cache = compute_cache
         self.workload = []
         self.seq_len = args.seq_length
-        self.tp = args.tensor_model_parallel_size
+        self.tp = self.args.tensor_model_parallel_size
         self.mbs = args.micro_batch
         if args.moe_enable:
             self.expert_model_parallel_size = args.expert_model_parallel_size
@@ -156,7 +177,7 @@ class SIMAI_workload:
         return total_params, moe_param_count
 
     def workload_generate_aiob(self):
-        # args.world_size --> total gpus number
+        # self.args.world_size --> total gpus number
         self.ga_num = self.args.global_batch // (self.args.micro_batch * self.args.dp_num)
         if self.ga_num < 1:
             print(
@@ -238,7 +259,7 @@ class SIMAI_workload:
                     dp_comm_size=0,
                 )
             )
-        if args.tensor_model_parallel_size == 1 :
+        if self.self.args.tensor_model_parallel_size == 1 :
             emd_backward_comm = "NONE"
         else:
             emd_backward_comm = "ALLREDUCE"
@@ -288,7 +309,7 @@ class SIMAI_workload:
 
                 if self.args.enable_sequence_parallel:
                     if "embedding" in name:
-                        if args.tensor_model_parallel_size == 1 :
+                        if self.args.tensor_model_parallel_size == 1 :
                             forward_comm = "NONE"
                             backward_comm = "NONE"
                         else:
@@ -359,7 +380,7 @@ class SIMAI_workload:
                         forward_compute_time = int(forward_compute_time / 2)
                         backward_compute_time = int(backward_compute_time / 2)
                         forward_comm_size_sp = tp_comm_size
-                        if args.tensor_model_parallel_size == 1 :
+                        if self.args.tensor_model_parallel_size == 1 :
                             forward_comm = "NONE"
                             backward_comm = "NONE"
                         else:
@@ -396,7 +417,7 @@ class SIMAI_workload:
                             forward_compute_time *= 2
                         forward_compute_time = int(forward_compute_time / 2)
                         backward_compute_time = int(backward_compute_time / 2)
-                        if args.tensor_model_parallel_size == 1 :
+                        if self.args.tensor_model_parallel_size == 1 :
                             forward_comm = "NONE"
                             backward_comm = "NONE"
                             backward_comm_2 = "NONE"
@@ -439,7 +460,7 @@ class SIMAI_workload:
                         if args.expert_model_parallel_size == 1:
                             forward_comm2 = "NONE"
                             forward_comm5 = "NONE"
-                        if args.tensor_model_parallel_size == 1:
+                        if self.args.tensor_model_parallel_size == 1:
                             if args.expert_model_parallel_size == 1:
                                 forward_comm1 = "NONE"
                             forward_comm3 = "NONE"
@@ -486,7 +507,7 @@ class SIMAI_workload:
                                     dp_compute_time=default_compute_time, dp_comm=dp_comm, dp_comm_size=dp_comm_size
                                     ))
                 else:
-                    if args.tensor_model_parallel_size == 1 :
+                    if self.args.tensor_model_parallel_size == 1 :
                         forward_comm = "NONE"
                         backward_comm = "NONE"
                     else:
@@ -577,7 +598,7 @@ class SIMAI_workload:
             )
 
     def workload_generate(self):
-        # args.world_size --> total gpus number
+        # self.args.world_size --> total gpus number
         self.ga_num = self.args.global_batch // (self.args.micro_batch * self.args.dp_num)
         if self.ga_num < 1:
             print(
@@ -843,7 +864,7 @@ class SIMAI_workload:
 
         pp_comm_value = 2 * self.args.micro_batch * self.args.seq_length * self.args.hidden_size
         if self.args.enable_sequence_parallel:
-            pp_comm_value /= self.args.tensor_model_parallel_size
+            pp_comm_value /= self.self.args.tensor_model_parallel_size
 
         pp_comm = (
             f"pp_comm: {pp_comm_value}"
@@ -852,7 +873,7 @@ class SIMAI_workload:
         )
         with open(filename, "w") as f:
             f.write((
-                f"HYBRID_TRANSFORMER_FWD_IN_BCKWD model_parallel_NPU_group: {self.args.tensor_model_parallel_size} "
+                f"HYBRID_TRANSFORMER_FWD_IN_BCKWD model_parallel_NPU_group: {self.self.args.tensor_model_parallel_size} "
                 f"ep: {self.args.expert_model_parallel_size} "
                 f"pp: {self.args.pipeline_model_parallel} "
                 f"vpp: {self.args.num_layers} "
@@ -919,7 +940,7 @@ class simAI_MicroTest:
                     )
             else:
                 f.write(
-                    f"HYBRID_TRANSFORMER_FWD_IN_BCKWD	model_parallel_NPU_group: {self.args.tensor_model_parallel_size} \
+                    f"HYBRID_TRANSFORMER_FWD_IN_BCKWD	model_parallel_NPU_group: {self.self.args.tensor_model_parallel_size} \
                         expert_parallel_npu_group: {self.args.expert_model_parallel_size} pp: {self.args.pipeline_model_parallel} \
                         ga: {self.ga_num} all_gpus: {self.args.world_size} checkpoints: 0 checkpoint_initiates: 0"
                     + "\n"
@@ -942,7 +963,7 @@ if __name__ == "__main__":
     result_dir = "results/workload/"
     if not os.path.isdir(result_dir):
         os.makedirs(result_dir)
-    filename = f"{args.gpu_type}-{args.model_name}-world_size{args.world_size}-tp{args.tensor_model_parallel_size}-pp{args.pipeline_model_parallel}-ep{args.expert_model_parallel_size}-gbs{args.global_batch}-mbs{args.micro_batch}-seq{args.seq_length}-MOE-{args.moe_enable}-GEMM-{args.moe_grouped_gemm}-flash_attn-{args.use_flash_attn}"
+    filename = f"{args.gpu_type}-{args.model_name}-world_size{args.world_size}-tp{self.args.tensor_model_parallel_size}-pp{args.pipeline_model_parallel}-ep{args.expert_model_parallel_size}-gbs{args.global_batch}-mbs{args.micro_batch}-seq{args.seq_length}-MOE-{args.moe_enable}-GEMM-{args.moe_grouped_gemm}-flash_attn-{args.use_flash_attn}"
     filepath = os.path.join(result_dir, filename)
     params = model.parameters()
     # work = SIMAI_workload(model, args, GPU_Tensor_core.A100, "gpt13B")

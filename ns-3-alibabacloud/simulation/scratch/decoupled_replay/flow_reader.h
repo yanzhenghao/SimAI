@@ -6,14 +6,12 @@
  * DECOUPLED REPLAY: Complete flow file parser.
  * Parses ALL 21 fields (including relative_delay_ns).
  * Based on: loadFlowsFromFile() in MockNcclGroup.cc:2245-2265
- * (NOT ImportFlows() -- that skips parent_flow_id[], child_flow_id[],
- *  group_type, op, loopstate).
+ * (NOT ImportFlows() -- that skips group_type, op, loopstate).
  *
- * Flow file format (21 fields per line, header line = total flow count):
+ * Flow file format (17 fields per line, header line = total flow count):
  *   flow_id src dest flow_size channel_id chunk_id chunk_count conn_type
  *   start_time pg maxPacketCount port dport
  *   np prev[0..np-1]
- *   npar parent_flow_id[0..npar-1] nchi child_flow_id[0..nchi-1]
  *   layer_num group_type op loopstate relative_delay_ns
  */
 
@@ -48,8 +46,6 @@ struct FlowFileRecord {
     uint32_t port = 0;
     uint32_t dport = 0;
     std::vector<uint32_t> prev;
-    std::vector<int> parent_flow_id;
-    std::vector<int> child_flow_id;
     uint32_t layer_num = 0;
     uint32_t group_type = 0;
     uint32_t op = 0;
@@ -145,43 +141,8 @@ inline std::vector<FlowFileRecord> LoadFlows(const std::string& flow_file_path) 
             r.prev.push_back(pid);
         }
 
-        // Fields 15-16: parent_flow_id[], child_flow_id[] (variable length)
-        uint32_t npar, nchi;
-        if (!(is >> npar)) {
-            std::cerr << "[LoadFlows] ERROR: Line " << line_num
-                      << " truncated (cannot read npar)" << std::endl;
-            continue;
-        }
-        r.parent_flow_id.reserve(npar);
-        for (uint32_t j = 0; j < npar; j++) {
-            int pid;
-            if (!(is >> pid)) {
-                std::cerr << "[LoadFlows] ERROR: Line " << line_num
-                          << " truncated (parent_flow_id[" << j << "/" << npar << "])"
-                          << std::endl;
-                break;
-            }
-            r.parent_flow_id.push_back(pid);
-        }
-
-        if (!(is >> nchi)) {
-            std::cerr << "[LoadFlows] ERROR: Line " << line_num
-                      << " truncated (cannot read nchi)" << std::endl;
-            continue;
-        }
-        r.child_flow_id.reserve(nchi);
-        for (uint32_t j = 0; j < nchi; j++) {
-            int cid;
-            if (!(is >> cid)) {
-                std::cerr << "[LoadFlows] ERROR: Line " << line_num
-                          << " truncated (child_flow_id[" << j << "/" << nchi << "])"
-                          << std::endl;
-                break;
-            }
-            r.child_flow_id.push_back(cid);
-        }
-
-        // Fields 17-20: layer_num, group_type, op, loopstate
+        // Fields 15-18: layer_num, group_type, op, loopstate
+        // (parent_flow_id/child_flow_id removed — skip)
         if (!(is >> r.layer_num >> r.group_type >> r.op >> r.loopstate)) {
             std::cerr << "[LoadFlows] ERROR: Line " << line_num
                       << " truncated (cannot read layer_num/group_type/op/loopstate)"

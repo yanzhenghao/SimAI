@@ -275,10 +275,7 @@ def generate_workload_content(
 
     model = _build_model(cfg, args)
     wl = SIMAI_workload(model, args, compute_cache=compute_cache)
-    if compute_cache is not None:
-        wl.workload_generate_aiob()
-    else:
-        wl.workload_generate()
+    wl.workload_generate_aiob()
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as tmp:
         tmp_path = tmp.name

@@ -48,7 +48,7 @@ class DeepSeekRowLinear(MockedModel):
         layer_id,
         prefix_name,
         # sequence_parallel_enabled=True,
-        computation_enable=False,
+        computation_enable=True,
         add_bias_linear=False,
         elem_size = 1,
         name=None,
@@ -102,7 +102,7 @@ class DeepSeekColumnLinear(MockedModel):
         layer_id,
         prefix_name="",
         # sequence_parallel_enabled=True,
-        computation_enable=False,
+        computation_enable=True,
         add_bias_linear=False,
         elem_size = 1,
         name=None,
@@ -154,7 +154,7 @@ class DeepSeekAttention(MockedModel):
         seq_len,
         batch_size,
         layer_id,
-        computation_enable=False,
+        computation_enable=True,
         add_bias_linear=False,
         elem_size = 1
 
@@ -405,7 +405,7 @@ class DeepSeekTransformerLayer(MockedModel):
             d_kv,
             shared_experts_cnt,
             # sequence_parallel_enabled=True,
-            computation_enable=False,
+            computation_enable=True,
             add_bias_linear=False,
             elem_size = 1
             ):

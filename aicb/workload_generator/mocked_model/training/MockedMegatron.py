@@ -28,7 +28,7 @@ class MegatronRowLinear(MockedModel):
         layer_id,
         prefix_name,
         sequence_parallel_enabled=True,
-        computation_enable=False,
+        computation_enable=True,
         name=None,
         add_bias_linear=False,
     ):
@@ -140,7 +140,7 @@ class MegatronColumnLinear(MockedModel):
         layer_id,
         prefix_name,
         sequence_parallel_enabled=True,
-        computation_enable=False,
+        computation_enable=True,
         name=None,
         add_bias_linear=False,
     ):
@@ -517,7 +517,7 @@ class MegatronTransformorLayer(MockedModel):
         num_experts,
         moe_grouped_gemm=True,
         sequence_parallel_enabled=True,
-        computation_enable=False,
+        computation_enable=True,
         add_bias_linear=False,
         moe_enable=False,
     ):
